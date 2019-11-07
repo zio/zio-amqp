@@ -2,6 +2,7 @@ package nl.vroste.zio.amqp
 
 import java.net.URI
 
+import com.rabbitmq.client.impl.nio.NioParams
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import zio._
 import zio.blocking.{ effectBlocking, Blocking }
@@ -66,6 +67,18 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   def nackMany(deliveryTag: Seq[Long], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
     nack(deliveryTag.max, requeue, multiple = true)
 
+  def publish(
+    exchange: String,
+    body: Array[Byte],
+    routingKey: String = "",
+    mandatory: Boolean = false,
+    immediate: Boolean = false,
+    props: AMQP.BasicProperties
+  ) =
+    withChannel { c =>
+      effectBlocking(c.basicPublish(exchange, routingKey, mandatory, immediate, props, body))
+    }
+
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))
 }
@@ -75,14 +88,17 @@ object Amqp {
   /**
    * Creates a Connection that makes use of the ZIO Platform's executor service
    *
-   * @param factory Connection factory. NIO is enabled by calling this method.
+   * @param factory Connection factory
    * @return Connection as a managed resource
    */
   def connect(factory: ConnectionFactory): ZManaged[Blocking, Throwable, Connection] =
     ZIO
       .runtime[Any]
       .flatMap { runtime =>
-        effectBlocking(factory.newConnection(runtime.Platform.executor.asECES))
+        val eces = runtime.Platform.executor.asECES
+        factory.useNio()
+        factory.setNioParams(new NioParams().setNioExecutor(eces))
+        effectBlocking(factory.newConnection(eces))
       }
       .toManaged(c => UIO(c.close()))
 
