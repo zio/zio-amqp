@@ -37,7 +37,7 @@ libraryDependencies ++= Seq(
   "dev.zio"        %% "zio-test-sbt"                % "1.0.0-RC16" % "test",
   "dev.zio"        %% "zio-interop-java"            % "1.1.0.0-RC5",
   "dev.zio"        %% "zio-interop-reactivestreams" % "1.0.3.4-RC1",
-  "com.rabbitmq"   % "amqp-client"                  % "5.7.3",
+  "com.rabbitmq"   % "amqp-client"                  % "5.8.0",
   "ch.qos.logback" % "logback-classic"              % "1.2.3"
 )
 
