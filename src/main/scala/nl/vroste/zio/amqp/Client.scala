@@ -48,9 +48,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       }
 
   def ack(deliveryTag: Long, multiple: Boolean = false): ZIO[Blocking, Throwable, Unit] =
-    withChannel { c =>
-      effectBlocking(c.basicAck(deliveryTag, multiple))
-    }
+    withChannel(c => effectBlocking(c.basicAck(deliveryTag, multiple)))
 
   def ackMany(deliveryTag: Seq[Long]): ZIO[Blocking, Throwable, Unit] =
     ack(deliveryTag.max, multiple = true)
@@ -60,9 +58,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     requeue: Boolean = false,
     multiple: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] =
-    withChannel { c =>
-      effectBlocking(c.basicNack(deliveryTag, multiple, requeue))
-    }
+    withChannel(c => effectBlocking(c.basicNack(deliveryTag, multiple, requeue)))
 
   def nackMany(deliveryTag: Seq[Long], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
     nack(deliveryTag.max, requeue, multiple = true)
@@ -75,9 +71,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     immediate: Boolean = false,
     props: AMQP.BasicProperties
   ) =
-    withChannel { c =>
-      effectBlocking(c.basicPublish(exchange, routingKey, mandatory, immediate, props, body))
-    }
+    withChannel(c => effectBlocking(c.basicPublish(exchange, routingKey, mandatory, immediate, props, body)))
 
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))
