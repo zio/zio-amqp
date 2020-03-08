@@ -36,9 +36,16 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
               queue,
               autoAck,
               consumerTag,
-              (_: String, message: Delivery) => offer(ZIO.succeed(message)),
-              (_: String) => offer(ZIO.fail(None)),
-              (_: String, sig: ShutdownSignalException) => offer(ZIO.fail(Some(sig)))
+              new DeliverCallback {
+                override def handle(consumerTag: String, message: Delivery): Unit = offer(ZIO.succeed(message))
+              },
+              new CancelCallback {
+                override def handle(consumerTag: String): Unit = offer(ZIO.fail(None))
+              },
+              new ConsumerShutdownSignalCallback {
+                override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
+                  offer(ZIO.fail(Some(sig)))
+              }
             )
           }
         }
@@ -89,7 +96,7 @@ object Amqp {
     ZIO
       .runtime[Any]
       .flatMap { runtime =>
-        val eces = runtime.Platform.executor.asECES
+        val eces = runtime.platform.executor.asECES
         factory.useNio()
         factory.setNioParams(new NioParams().setNioExecutor(eces))
         effectBlocking(factory.newConnection(eces))
