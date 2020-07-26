@@ -36,10 +36,10 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
               queue,
               autoAck,
               consumerTag,
-              new DeliverCallback {
+              new DeliverCallback                {
                 override def handle(consumerTag: String, message: Delivery): Unit = offer(ZIO.succeed(message))
               },
-              new CancelCallback {
+              new CancelCallback                 {
                 override def handle(consumerTag: String): Unit = offer(ZIO.fail(None))
               },
               new ConsumerShutdownSignalCallback {
