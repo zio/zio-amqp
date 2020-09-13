@@ -1,15 +1,20 @@
+[![Bintray](https://img.shields.io/bintray/v/vroste/maven/zio-amqp?label=latest)](https://bintray.com/vroste/maven/zio-amqp/_latestVersion)
+
 # ZIO AMQP
 
 ZIO AMQP is a ZIO-based wrapper around the RabbitMQ client. It provides a streaming interface to AMQP queues and helps to prevent you from shooting yourself in the foot with thread-safety issues. 
 
 
-## Usage 
+## Installation
 
 Add to your build.sbt:
 
 ```scala
-libraryDependencies += "nl.vroste" %% "zio-amqp" % "0.0.1"
+resolvers += Resolver.jcenterRepo
+libraryDependencies += "nl.vroste" %% "zio-amqp" % "<version>"
 ```
+
+The latest version is built against ZIO 1.0.1.
 
 ### Consuming
 

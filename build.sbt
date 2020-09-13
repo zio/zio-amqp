@@ -1,10 +1,11 @@
 val mainScala = "2.13.1"
 val allScala  = Seq("2.11.12", "2.12.10", mainScala)
 
+enablePlugins(GitVersioning)
+
 inThisBuild(
   List(
     organization := "nl.vroste",
-    version := "0.0.1",
     homepage := Some(url("https://github.com/svroonland/zio-amqp")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     scalaVersion := mainScala,
@@ -23,7 +24,8 @@ inThisBuild(
       case _                                   => MergeStrategy.first
     },
     bintrayOrganization := Some("vroste"),
-    bintrayReleaseOnPublish in ThisBuild := false,
+    bintrayVcsUrl := Some("https://github.com/svroonland/zio-amqp"),
+    bintrayReleaseOnPublish in ThisBuild := true,
     bintrayPackageLabels := Seq("zio", "amqp")
   )
 )
