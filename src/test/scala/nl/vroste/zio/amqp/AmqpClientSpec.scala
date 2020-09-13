@@ -3,8 +3,8 @@ import java.net.URI
 
 import com.rabbitmq.client.ConnectionFactory
 import zio.ZIO
-import zio.stream.ZSink
 import zio.test._
+import zio.stream.ZTransducer
 
 object AmqpClientSpec extends DefaultRunnableSpec {
 
@@ -27,7 +27,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
                        ZIO.succeed(record.getEnvelope.getDeliveryTag)
                      }
                      .take(200)
-                     .aggregate(ZSink.collectAllN[Long](100))
+                     .aggregate(ZTransducer.collectAllN[Long](100))
                      .map(_.last)
                      .mapM { tag =>
                        println(s"At tag: ${tag}")

@@ -37,7 +37,8 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
               autoAck,
               consumerTag,
               new DeliverCallback                {
-                override def handle(consumerTag: String, message: Delivery): Unit = offer(ZIO.succeed(message))
+                override def handle(consumerTag: String, message: Delivery): Unit =
+                  offer(ZIO.succeed(Chunk.single(message)))
               },
               new CancelCallback                 {
                 override def handle(consumerTag: String): Unit = offer(ZIO.fail(None))
