@@ -2,11 +2,14 @@ package nl.vroste.zio.amqp
 
 import java.net.URI
 
+import com.rabbitmq.client.AMQP.Queue
 import com.rabbitmq.client.impl.nio.NioParams
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import zio._
 import zio.blocking.{ effectBlocking, Blocking }
 import zio.stream.ZStream
+
+import scala.jdk.CollectionConverters._
 
 /**
  * Thread-safe access to a RabbitMQ Channel
@@ -83,6 +86,15 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
 
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))
+
+  def queueDeclare(
+    name: String,
+    durable: Boolean = false,
+    exclusive: Boolean = false,
+    autoDelete: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
+  ): ZIO[Blocking, Throwable, Queue.DeclareOk] =
+    withChannel(c => effectBlocking(c.queueDeclare(name, durable, exclusive, autoDelete, arguments.asJava)))
 }
 
 object Amqp {

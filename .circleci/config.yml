@@ -17,6 +17,10 @@ jobs:
   test213_jdk8:
     docker:
       - image: hseeberger/scala-sbt:8u222_1.3.4_2.13.1
+      - image: rabbitmq:latest
+    environment:
+      - AMQP_SERVER_URI: "amqp://localhost:5672"
+      - AMQP_QUEUE: test
     steps:
       - checkout
       - restore_cache:
