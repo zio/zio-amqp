@@ -34,9 +34,9 @@ name := "zio-amqp"
 scalafmtOnCompile := true
 
 libraryDependencies ++= Seq(
-  "dev.zio"       %% "zio-streams"                 % "1.0.1",
-  "dev.zio"       %% "zio-test"                    % "1.0.1" % "test",
-  "dev.zio"       %% "zio-test-sbt"                % "1.0.1" % "test",
+  "dev.zio"       %% "zio-streams"                 % "1.0.2",
+  "dev.zio"       %% "zio-test"                    % "1.0.2" % "test",
+  "dev.zio"       %% "zio-test-sbt"                % "1.0.2" % "test",
   "dev.zio"       %% "zio-interop-reactivestreams" % "1.0.3.5",
   "com.rabbitmq"   % "amqp-client"                 % "5.8.0",
   "ch.qos.logback" % "logback-classic"             % "1.2.3"
