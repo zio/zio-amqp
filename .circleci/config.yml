@@ -21,7 +21,7 @@ jobs:
       - checkout
       - restore_cache:
           key: sbt-cache
-      - run: sbt ++2.13.1! testtest:compile
+      - run: sbt ++2.13.1! test:compile
       - save_cache:
           key: sbt-cache
           paths:
