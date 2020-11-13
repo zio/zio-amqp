@@ -8,10 +8,40 @@ import zio._
 import zio.blocking.{ effectBlocking, Blocking }
 import zio.stream.ZStream
 
+import scala.jdk.CollectionConverters._
+
 /**
  * Thread-safe access to a RabbitMQ Channel
  */
 class Channel private[amqp] (channel: RChannel, access: Semaphore) {
+  def queueDeclare(
+    queue: String,
+    durable: Boolean = false,
+    exclusive: Boolean = false,
+    autoDelete: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+    _.queueDeclare(queue, durable, exclusive, autoDelete, arguments.asJava)
+  ).unit
+
+  def exchangeDeclare(
+    exchange: String,
+    `type`: ExchangeType,
+    durable: Boolean = false,
+    autoDelete: Boolean = false,
+    internal: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+    _.exchangeDeclare(exchange, ExchangeType.toRabbitMqType(`type`), durable, autoDelete, internal, arguments.asJava)
+  ).unit
+
+  def queueBind(
+    queue: String,
+    exchange: String,
+    routingKey: String,
+    arguments: Map[String, AnyRef] = Map.empty
+  ): ZIO[Blocking, Throwable, Unit] =
+    withChannelBlocking(_.queueBind(queue, exchange, routingKey, arguments.asJava)).unit
 
   /**
    * Consume a stream of messages from a queue
@@ -83,6 +113,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
 
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))
+
+  private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
+    access.withPermit(effectBlocking(f(channel)))
 }
 
 object Amqp {
