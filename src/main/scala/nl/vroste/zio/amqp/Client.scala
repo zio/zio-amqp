@@ -10,6 +10,21 @@ import zio.stream.ZStream
 
 import scala.jdk.CollectionConverters._
 
+sealed trait ExchangeType
+object ExchangeType {
+  case object Direct  extends ExchangeType
+  case object Fanout  extends ExchangeType
+  case object Topic   extends ExchangeType
+  case object Headers extends ExchangeType
+
+  def toRabbitMqType(t: ExchangeType): BuiltinExchangeType = t match {
+    case Direct  => BuiltinExchangeType.DIRECT
+    case Fanout  => BuiltinExchangeType.FANOUT
+    case Topic   => BuiltinExchangeType.TOPIC
+    case Headers => BuiltinExchangeType.HEADERS
+  }
+}
+
 /**
  * Thread-safe access to a RabbitMQ Channel
  */
@@ -107,8 +122,8 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     routingKey: String = "",
     mandatory: Boolean = false,
     immediate: Boolean = false,
-    props: AMQP.BasicProperties
-  ) =
+    props: AMQP.BasicProperties = new AMQP.BasicProperties()
+  ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c => effectBlocking(c.basicPublish(exchange, routingKey, mandatory, immediate, props, body)))
 
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
