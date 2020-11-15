@@ -29,14 +29,39 @@ object ExchangeType {
  * Thread-safe access to a RabbitMQ Channel
  */
 class Channel private[amqp] (channel: RChannel, access: Semaphore) {
+
+  /**
+   * Declare a queue
+   * @param queue Name of the queue. If left empty, a random queue name is used
+   * @param durable True if we are declaring a durable queue (the queue will survive a server restart)
+   * @param exclusive Exclusive to this connection
+   * @param autoDelete True if we are declaring an autodelete queue (server will delete it when no longer in use)
+   * @param arguments
+   * @return The name of the created queue
+   */
   def queueDeclare(
-    queue: String,
+    queue: String = "",
     durable: Boolean = false,
     exclusive: Boolean = false,
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, String] = withChannelBlocking(
     _.queueDeclare(queue, durable, exclusive, autoDelete, arguments.asJava)
+  ).map(_.getQueue)
+
+  /**
+   * Delete a queue
+   *
+   * @param queue Name of the queue
+   * @param ifUnused True if the queue should be deleted only if not in use
+   * @param ifEmpty True if the queue should be deleted only if empty
+   */
+  def queueDelete(
+    queue: String = "",
+    ifUnused: Boolean = false,
+    ifEmpty: Boolean = false
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+    _.queueDelete(queue, ifUnused, ifEmpty)
   ).unit
 
   def exchangeDeclare(
