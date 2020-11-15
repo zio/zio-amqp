@@ -17,6 +17,7 @@ jobs:
   test213_jdk8:
     docker:
       - image: hseeberger/scala-sbt:8u222_1.3.4_2.13.1
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
@@ -31,6 +32,7 @@ jobs:
   test213_jdk11:
     docker:
       - image: hseeberger/scala-sbt:11.0.4_1.3.4_2.13.1
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
@@ -59,6 +61,7 @@ jobs:
   test212_jdk11:
     docker:
       - image: hseeberger/scala-sbt:11.0.4_1.3.4_2.12.10
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
@@ -73,6 +76,7 @@ jobs:
   release:
     docker:
       - image: hseeberger/scala-sbt:11.0.7_1.3.13_2.12.12
+      - image: rabbitmq:latest
     steps:
       - checkout
       - run: git fetch --tags
