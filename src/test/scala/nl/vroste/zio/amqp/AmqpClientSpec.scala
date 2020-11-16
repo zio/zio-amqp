@@ -12,7 +12,9 @@ object AmqpClientSpec extends DefaultRunnableSpec {
     suite("AmqpClientSpec")(
       testM("Amqp.consume delivers messages") {
         val factory = new ConnectionFactory()
-        factory.setUri(URI.create(System.getenv("AMQP_SERVER_URI")))
+        val uri     = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse("amqp://guest:guest@localhost:5672"))
+        println(uri)
+        factory.setUri(uri)
 
         (Amqp
           .connect(factory)
@@ -20,13 +22,18 @@ object AmqpClientSpec extends DefaultRunnableSpec {
           .tapM(_ => ZIO(println("Created channel!")))
           .use { channel =>
             for {
+              _ <- channel.queueDeclare("queue1")
+              _ <- channel.exchangeDeclare("exchange1", ExchangeType.Fanout)
+              _ <- channel.queueBind("queue1", "exchange1", "myroutingkey")
+              _ <- channel.publish("exchange1", "message1".getBytes)
+              _ <- channel.publish("exchange1", "message2".getBytes)
               _ <- channel
-                     .consume(queue = System.getenv("AMQP_QUEUE"), consumerTag = "test")
+                     .consume(queue = "queue1", consumerTag = "test")
                      .mapM { record =>
                        println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
                        ZIO.succeed(record.getEnvelope.getDeliveryTag)
                      }
-                     .take(200)
+                     .take(2)
                      .aggregate(ZTransducer.collectAllN[Long](100))
                      .map(_.last)
                      .mapM { tag =>

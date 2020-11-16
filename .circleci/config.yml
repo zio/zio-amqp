@@ -2,74 +2,58 @@ version: 2.1
 jobs:
   lint:
     docker:
-      - image: hseeberger/scala-sbt:8u222_1.3.4_2.13.1
+      - image: hseeberger/scala-sbt:11.0.8_1.3.13_2.13.3
     steps:
       - checkout
       - restore_cache:
-          key: sbt-cache
-      - run: sbt ++2.13.1! check
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++2.13.3! check
       - save_cache:
-          key: sbt-cache
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
           paths:
             - "~/.ivy2/cache"
             - "~/.sbt"
             - "~/.m2"
+            - "~/.cache/coursier/v1"
   test213_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u222_1.3.4_2.13.1
+      - image: hseeberger/scala-sbt:8u265_1.3.13_2.13.3
+      - image: rabbitmq:latest
+
     steps:
       - checkout
       - restore_cache:
-          key: sbt-cache
-      - run: sbt ++2.13.1! test:compile
-      - save_cache:
-          key: sbt-cache
-          paths:
-            - "~/.ivy2/cache"
-            - "~/.sbt"
-            - "~/.m2"
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++2.13.3! test
   test213_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.4_1.3.4_2.13.1
+      - image: hseeberger/scala-sbt:11.0.8_1.3.13_2.13.3
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
-          key: sbt-cache
-      - run: sbt ++2.13.1! test:compile
-      - save_cache:
-          key: sbt-cache
-          paths:
-            - "~/.ivy2/cache"
-            - "~/.sbt"
-            - "~/.m2"
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++2.13.3! test
+      - store_test_results:
+          path: target/test-reports
   test212_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u222_1.3.4_2.12.10
+      - image: hseeberger/scala-sbt:8u265_1.3.13_2.12.12
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
-          key: sbt-cache
-      - run: sbt ++2.12.12! test:compile
-      - save_cache:
-          key: sbt-cache
-          paths:
-            - "~/.ivy2/cache"
-            - "~/.sbt"
-            - "~/.m2"
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++2.12.11! test
   test212_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.4_1.3.4_2.12.10
+      - image: hseeberger/scala-sbt:11.0.7_1.3.13_2.12.12
+      - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
-          key: sbt-cache
-      - run: sbt ++2.12.12! test:compile
-      - save_cache:
-          key: sbt-cache
-          paths:
-            - "~/.ivy2/cache"
-            - "~/.sbt"
-            - "~/.m2"
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++2.12.11! test
   release:
     docker:
       - image: hseeberger/scala-sbt:11.0.7_1.3.13_2.12.12
@@ -77,7 +61,8 @@ jobs:
       - checkout
       - run: git fetch --tags
       - restore_cache:
-          key: sbt-cache
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: apt update && apt install -y protobuf-compiler
       - run: sbt ciReleaseBintray
 
 workflows:
@@ -113,6 +98,11 @@ workflows:
             tags:
               only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
       - release:
+          requires:
+            - test213_jdk8
+            - test213_jdk11
+            - test212_jdk8
+            - test212_jdk11
           filters:
             branches:
               ignore: /.*/
