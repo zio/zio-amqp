@@ -83,6 +83,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   ): ZIO[Blocking, Throwable, Unit] =
     withChannelBlocking(_.queueBind(queue, exchange, routingKey, arguments.asJava)).unit
 
+  def basicQos(
+    count: Int,
+    global: Boolean = false
+  ): ZIO[Blocking, Throwable, Unit] =
+    withChannelBlocking(_.basicQos(count, global)).unit
+
   /**
    * Consume a stream of messages from a queue
    *
