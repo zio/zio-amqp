@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "dev.zio"                %% "zio-interop-reactivestreams" % "1.3.0.7-2",
   "com.rabbitmq"            % "amqp-client"                 % "5.10.0",
   "ch.qos.logback"          % "logback-classic"             % "1.2.3",
-  "org.scala-lang.modules" %% "scala-collection-compat"     % "2.4.1"
+  "org.scala-lang.modules" %% "scala-collection-compat"     % "2.4.2"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
