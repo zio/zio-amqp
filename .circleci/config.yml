@@ -17,7 +17,7 @@ jobs:
             - "~/.cache/coursier/v1"
   test213_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u265_1.3.13_2.13.3
+      - image: hseeberger/scala-sbt:8u282_1.4.9_2.13.5
       - image: rabbitmq:latest
 
     steps:
@@ -27,7 +27,7 @@ jobs:
       - run: sbt ++2.13.3! test
   test213_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.8_1.3.13_2.13.3
+      - image: hseeberger/scala-sbt:11.0.10_1.4.9_2.13.5
       - image: rabbitmq:latest
     steps:
       - checkout
@@ -56,7 +56,7 @@ jobs:
       - run: sbt ++2.12.11! test
   release:
     docker:
-      - image: hseeberger/scala-sbt:11.0.10_1.4.7_2.13.5
+      - image: hseeberger/scala-sbt:11.0.10_1.4.9_2.13.5
     steps:
       - checkout
       - run: git fetch --tags
