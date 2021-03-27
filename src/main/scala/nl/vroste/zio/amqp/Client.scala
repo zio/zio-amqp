@@ -1,13 +1,11 @@
 package nl.vroste.zio.amqp
 
-import java.net.URI
-
-import com.rabbitmq.client.impl.nio.NioParams
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import zio._
 import zio.blocking.{ effectBlocking, Blocking }
 import zio.stream.ZStream
 
+import java.net.URI
 import scala.jdk.CollectionConverters._
 
 sealed trait ExchangeType
@@ -167,20 +165,13 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
 object Amqp {
 
   /**
-   * Creates a Connection that makes use of the ZIO Platform's executor service
+   * Creates a Connection
    *
    * @param factory Connection factory
    * @return Connection as a managed resource
    */
   def connect(factory: ConnectionFactory): ZManaged[Blocking, Throwable, Connection] =
-    ZIO
-      .runtime[Any]
-      .flatMap { runtime =>
-        val eces = runtime.platform.executor.asECES
-        factory.useNio()
-        factory.setNioParams(new NioParams().setNioExecutor(eces))
-        effectBlocking(factory.newConnection(eces))
-      }
+    effectBlocking(factory.newConnection())
       .toManaged(c => UIO(c.close()))
 
   def connect(uri: URI): ZManaged[Blocking, Throwable, Connection] = {
