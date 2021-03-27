@@ -1,5 +1,5 @@
 val mainScala = "2.13.5"
-val allScala  = Seq("2.11.12", "2.12.12", mainScala)
+val allScala  = Seq("2.11.12", "2.12.13", mainScala)
 
 inThisBuild(
   List(
