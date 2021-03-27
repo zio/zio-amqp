@@ -1,19 +1,27 @@
-val mainScala = "2.13.1"
-val allScala  = Seq("2.11.12", "2.12.10", mainScala)
-
-enablePlugins(GitVersioning)
+val mainScala = "2.13.5"
+val allScala  = Seq("2.11.12", "2.12.12", mainScala)
 
 inThisBuild(
   List(
     organization := "nl.vroste",
     homepage := Some(url("https://github.com/svroonland/zio-amqp")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer(
+        "svroonland",
+        "Vroste",
+        "info@vroste.nl",
+        url("https://github.com/svroonland")
+      )
+    ),
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/svroonland/zio-amqp/"), "scm:git:git@github.com:svroonland/zio-amqp.git")
+    ),
     scalaVersion := mainScala,
     crossScalaVersions := allScala,
     parallelExecution in Test := false,
     fork in Test := true,
     fork in run := true,
-    publishMavenStyle := true,
     publishArtifact in Test := false,
     assemblyJarName in assembly := "zio-amqp-" + version.value + ".jar",
     test in assembly := {},
@@ -22,11 +30,7 @@ inThisBuild(
       case PathList("META-INF", xs @ _*)       => MergeStrategy.discard
       case n if n.startsWith("reference.conf") => MergeStrategy.concat
       case _                                   => MergeStrategy.first
-    },
-    bintrayOrganization := Some("vroste"),
-    bintrayVcsUrl := Some("https://github.com/svroonland/zio-amqp"),
-    bintrayReleaseOnPublish in ThisBuild := true,
-    bintrayPackageLabels := Seq("zio", "amqp")
+    }
   )
 )
 
