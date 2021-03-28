@@ -1,6 +1,4 @@
-[![Sonatype Nexus (Releases)](https://img.shields.io/nexus/r/nl.vroste/zio-amqp_2.13?nexusVersion=3&server=https%3A%2F%2Fnexus.pentaho.org)](https://repo1.maven.org/maven2/nl/vroste/zio-amqp_2.13/)
-
-[![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/nl.vroste/zio-amqp_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/nl/vroste/zio-amqp_2.13/)
+[![Maven Central](https://img.shields.io/maven-central/v/nl.vroste/zio-amqp_2.13)](https://repo1.maven.org/maven2/nl/vroste/zio-amqp_2.13/) [![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/nl.vroste/zio-amqp_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/nl/vroste/zio-amqp_2.13/)
 # ZIO AMQP
 
 ZIO AMQP is a ZIO-based wrapper around the RabbitMQ client. It provides a streaming interface to AMQP queues and helps to prevent you from shooting yourself in the foot with thread-safety issues. 
