@@ -41,7 +41,7 @@ libraryDependencies ++= Seq(
   "dev.zio"                %% "zio-streams"                 % "1.0.8",
   "dev.zio"                %% "zio-test"                    % "1.0.8" % Test,
   "dev.zio"                %% "zio-test-sbt"                % "1.0.8" % Test,
-  "dev.zio"                %% "zio-interop-reactivestreams" % "1.3.4",
+  "dev.zio"                %% "zio-interop-reactivestreams" % "1.3.5",
   "com.rabbitmq"            % "amqp-client"                 % "5.12.0",
   "ch.qos.logback"          % "logback-classic"             % "1.2.3" % Test,
   "org.scala-lang.modules" %% "scala-collection-compat"     % "2.4.4"
