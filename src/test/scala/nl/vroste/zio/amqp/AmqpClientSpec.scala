@@ -19,8 +19,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val exchangeName   = s"exchange-$testAmqpSuffix"
         val queueName      = s"queue-$testAmqpSuffix"
         val message1       = UUID.randomUUID().toString
-        val message2       = UUID.randomUUID().toString
-        val messages       = Set(message1, message2)
+//        val message2       = UUID.randomUUID().toString
+        val messages       = Set(message1)//, message2)
         val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse("amqp://guest:guest@localhost:5672"))
         println(uri)
@@ -35,7 +35,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.queueDeclare(queueName)
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
               _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
-//              _      <- channel.publish(exchangeName, message1.getBytes)
+              _      <- channel.publish(exchangeName, message1.getBytes)
 //              _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
                           .consume(queue = queueName, consumerTag = "test")
@@ -43,8 +43,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
                             println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
                             ZIO.succeed(record)
                           }
-                          .take(2)
-                          .runCollect
+                          .take(1)
+                          .runHead
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
                             println(s"At tag: $tag")
