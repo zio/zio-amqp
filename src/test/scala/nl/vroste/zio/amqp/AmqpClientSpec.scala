@@ -2,6 +2,7 @@ package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
 import zio.ZIO
 import zio.duration.Duration
+import zio.stream.ZStream
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect._
 import zio.test._
@@ -19,8 +20,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val exchangeName   = s"exchange-$testAmqpSuffix"
         val queueName      = s"queue-$testAmqpSuffix"
         val message1       = UUID.randomUUID().toString
-//        val message2       = UUID.randomUUID().toString
-        val messages       = Set(message1)//, message2)
+        val message2       = UUID.randomUUID().toString
+        val messages       = Set(message1, message2)
         val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse("amqp://guest:guest@localhost:5672"))
         println(uri)
@@ -36,15 +37,15 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
               _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
               _      <- channel.publish(exchangeName, message1.getBytes)
-//              _      <- channel.publish(exchangeName, message2.getBytes)
+              _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
                           .consume(queue = queueName, consumerTag = "test")
                           .mapM { record =>
                             println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
                             ZIO.succeed(record)
                           }
-                          .take(1)
-                          .runHead
+                          .take(2)
+                          .runCollect
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
                             println(s"At tag: $tag")
@@ -54,6 +55,63 @@ object AmqpClientSpec extends DefaultRunnableSpec {
                           .map(_.map(r => new String(r.getBody)))
             } yield assert(messages)(equalTo(bodies.toSet))
           }
-      } @@ timeout(Duration(10, TimeUnit.SECONDS))
+      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+
+      testM("Amqp.consume returns from empty queue") {
+        val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
+        val exchangeName   = s"exchange-$testAmqpSuffix"
+        val queueName      = s"queue-$testAmqpSuffix"
+        val factory        = new ConnectionFactory()
+        val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse("amqp://guest:guest@localhost:5672"))
+        println(uri)
+        factory.setUri(uri)
+
+        (Amqp
+          .connect(factory)
+          .tapM(_ => ZIO(println("Connected!"))) >>= Amqp.createChannel)
+          .tapM(_ => ZIO(println("Created channel!")))
+          .use { channel =>
+            for {
+              _      <- channel.queueDeclare(queueName)
+              _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
+              _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
+              bodies <- channel
+                          .consume(queue = queueName, consumerTag = "test")
+                          .mapM { record =>
+                            println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
+                            ZIO.succeed(record)
+                          }
+                          .runHead
+                          .tap { records =>
+                            val tag = records.last.getEnvelope.getDeliveryTag
+                            println(s"At tag: $tag")
+                            channel.ack(tag)
+
+                          }
+                          .map(_.map(r => new String(r.getBody)))
+            } yield assert(bodies)(equalTo(None))
+          }
+      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+
+      testM("ZStream.runHead returns non-empty when an element is available") {
+        val zs = ZStream.fromIterable(Seq("a", "b"))
+        for {
+          foo <- zs
+            .runHead
+          _ <- ZIO(println(s"### foo=$foo"))
+        } yield assert(foo)(equalTo(Some("a")))
+      } @@ timeout(Duration(1, TimeUnit.SECONDS)),
+
+      testM("ZStream.runHead returns empty when NO element is available") {
+        val zs = ZStream.fromIterable(Nil)
+        for {
+          foo <- zs
+            .runHead
+          _ <- ZIO(println(s"### foo=$foo"))
+        } yield assert(foo)(equalTo(None))
+      } @@ timeout(Duration(1, TimeUnit.SECONDS))
     )
-}
+
+
+
+  }
