@@ -35,8 +35,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.queueDeclare(queueName)
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
               _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
-              _      <- channel.publish(exchangeName, message1.getBytes)
-              _      <- channel.publish(exchangeName, message2.getBytes)
+//              _      <- channel.publish(exchangeName, message1.getBytes)
+//              _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
                           .consume(queue = queueName, consumerTag = "test")
                           .mapM { record =>
