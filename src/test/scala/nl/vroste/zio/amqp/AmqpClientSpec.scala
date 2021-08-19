@@ -56,7 +56,6 @@ object AmqpClientSpec extends DefaultRunnableSpec {
             } yield assert(messages)(equalTo(bodies.toSet))
           }
       } @@ timeout(Duration(10, TimeUnit.SECONDS)),
-
       testM("Amqp.consume returns from empty queue") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val exchangeName   = s"exchange-$testAmqpSuffix"
@@ -92,26 +91,20 @@ object AmqpClientSpec extends DefaultRunnableSpec {
             } yield assert(bodies)(equalTo(None))
           }
       } @@ timeout(Duration(10, TimeUnit.SECONDS)),
-
       testM("ZStream.runHead returns non-empty when an element is available") {
         val zs = ZStream.fromIterable(Seq("a", "b"))
         for {
-          foo <- zs
-            .runHead
-          _ <- ZIO(println(s"### foo=$foo"))
+          foo <- zs.runHead
+          _   <- ZIO(println(s"### foo=$foo"))
         } yield assert(foo)(equalTo(Some("a")))
       } @@ timeout(Duration(1, TimeUnit.SECONDS)),
-
       testM("ZStream.runHead returns empty when NO element is available") {
         val zs = ZStream.fromIterable(Nil)
         for {
-          foo <- zs
-            .runHead
-          _ <- ZIO(println(s"### foo=$foo"))
+          foo <- zs.runHead
+          _   <- ZIO(println(s"### foo=$foo"))
         } yield assert(foo)(equalTo(None))
       } @@ timeout(Duration(1, TimeUnit.SECONDS))
     )
 
-
-
-  }
+}
