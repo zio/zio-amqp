@@ -32,28 +32,27 @@ object AmqpClientSpec extends DefaultRunnableSpec {
           .tapM(_ => ZIO(println("Created channel!")))
           .use { channel =>
             for {
-              _ <- channel.queueDeclare(queueName)
-              _ <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
-              _ <- channel.queueBind(queueName, exchangeName, "myroutingkey")
-              _ <- channel.publish(exchangeName, message1.getBytes)
-              _ <- channel.publish(exchangeName, message2.getBytes)
+              _      <- channel.queueDeclare(queueName)
+              _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
+              _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
+              _      <- channel.publish(exchangeName, message1.getBytes)
+              _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
-                .consume(queue = queueName, consumerTag = "test")
-                .mapM { record =>
-                  println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
-                  ZIO.succeed(record)
-                }
-                .take(2)
-                .runCollect
-                .tap { records =>
-                  val tag = records.last.getEnvelope.getDeliveryTag
-                  println(s"At tag: $tag")
-                  channel.ack(tag)
+                          .consume(queue = queueName, consumerTag = "test")
+                          .mapM { record =>
+                            println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
+                            ZIO.succeed(record)
+                          }
+                          .take(2)
+                          .runCollect
+                          .tap { records =>
+                            val tag = records.last.getEnvelope.getDeliveryTag
+                            println(s"At tag: $tag")
+                            channel.ack(tag)
 
-                }
-                .map(_.map(r => new String(r.getBody)))
-            } yield
-              assert(messages)(equalTo(bodies.toSet))
+                          }
+                          .map(_.map(r => new String(r.getBody)))
+            } yield assert(messages)(equalTo(bodies.toSet))
           }
       } @@ timeout(Duration(10, TimeUnit.SECONDS))
     )
