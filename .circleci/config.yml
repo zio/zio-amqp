@@ -1,13 +1,17 @@
 version: 2.1
+parameters:
+  tag_regex:
+    type: string
+    default: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 jobs:
   lint:
     docker:
-      - image: hseeberger/scala-sbt:11.0.8_1.3.13_2.13.3
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.3! check
+      - run: sbt ++2.13.6! check
       - save_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
           paths:
@@ -17,37 +21,46 @@ jobs:
             - "~/.cache/coursier/v1"
   test213_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u282_1.4.9_2.13.5
+      - image: hseeberger/scala-sbt:8u302_1.5.5_2.13.6
       - image: rabbitmq:latest
 
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.3! test
+      - run: sbt ++2.13.6! test
   test213_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.10_1.4.9_2.13.5
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
       - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.3! test
+      - run: sbt ++2.13.6! test
       - store_test_results:
           path: target/test-reports
   test212_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u265_1.3.13_2.12.12
+      - image: hseeberger/scala-sbt:8u302_1.5.5_2.12.14
       - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.12.11! test
+      - run: sbt ++2.12.14! test
+  test300_jdk11:
+    docker:
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_3.0.1
+      - image: rabbitmq:latest
+    steps:
+      - checkout
+      - restore_cache:
+          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: sbt ++3.0.1! test
   test212_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.7_1.3.13_2.12.12
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.12.14
       - image: rabbitmq:latest
     steps:
       - checkout
@@ -56,7 +69,7 @@ jobs:
       - run: sbt ++2.12.11! test
   release:
     docker:
-      - image: hseeberger/scala-sbt:11.0.10_1.4.9_2.13.5
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
     steps:
       - checkout
       - run: git fetch --tags
@@ -74,40 +87,47 @@ workflows:
       - lint:
           filters:
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: << pipeline.parameters.tag_regex >>
       - test213_jdk8:
           requires:
             - lint
           filters:
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: << pipeline.parameters.tag_regex >>
       - test213_jdk11:
           requires:
             - lint
           filters:
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: << pipeline.parameters.tag_regex >>
       - test212_jdk8:
           requires:
             - lint
           filters:
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: << pipeline.parameters.tag_regex >>
       - test212_jdk11:
           requires:
             - lint
           filters:
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: << pipeline.parameters.tag_regex >>
+      - test300_jdk11:
+          requires:
+            - lint
+          filters:
+            tags:
+              only: << pipeline.parameters.tag_regex >>
       - release:
           requires:
             - test213_jdk8
             - test213_jdk11
             - test212_jdk8
             - test212_jdk11
+            - test300_jdk11
           filters:
             branches:
               only:
                 - master
             tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only: /^v.*/
