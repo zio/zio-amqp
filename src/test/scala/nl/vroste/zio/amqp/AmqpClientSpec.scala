@@ -57,7 +57,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
             } yield assert(messages)(equalTo(bodies.toSet))
           }
       } @@ timeout(Duration(10, TimeUnit.SECONDS)),
-      testM("Amqp.consume delivers messages with high concurrency") {
+      testM("Amqp.publish delivers messages with high concurrency") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val exchangeName   = s"exchange-$testAmqpSuffix"
         val queueName      = s"queue-$testAmqpSuffix"
