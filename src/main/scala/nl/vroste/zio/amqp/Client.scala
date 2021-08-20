@@ -73,6 +73,13 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     _.exchangeDeclare(exchange, ExchangeType.toRabbitMqType(`type`), durable, autoDelete, internal, arguments.asJava)
   ).unit
 
+  def exchangeDelete(
+    queue: String = "",
+    ifUnused: Boolean = false
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+    _.exchangeDelete(queue, ifUnused)
+  ).unit
+
   def queueBind(
     queue: String,
     exchange: String,
