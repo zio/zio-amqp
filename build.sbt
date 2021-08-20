@@ -3,10 +3,10 @@ val allScala  = Seq("2.12.14", "3.0.1", mainScala)
 
 inThisBuild(
   List(
-    organization := "nl.vroste",
-    homepage := Some(url("https://github.com/svroonland/zio-amqp")),
-    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-    developers := List(
+    organization                      := "nl.vroste",
+    homepage                          := Some(url("https://github.com/svroonland/zio-amqp")),
+    licenses                          := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers                        := List(
       Developer(
         "svroonland",
         "Vroste",
@@ -14,18 +14,18 @@ inThisBuild(
         url("https://github.com/svroonland")
       )
     ),
-    scmInfo := Some(
+    scmInfo                           := Some(
       ScmInfo(url("https://github.com/svroonland/zio-amqp/"), "scm:git:git@github.com:svroonland/zio-amqp.git")
     ),
-    scalaVersion := mainScala,
-    crossScalaVersions := allScala,
-    parallelExecution in Test := false,
-    fork in Test := true,
-    fork in run := true,
-    publishArtifact in Test := false,
-    assemblyJarName in assembly := "zio-amqp-" + version.value + ".jar",
-    test in assembly := {},
-    target in assembly := file(baseDirectory.value + "/../bin/"),
+    scalaVersion                      := mainScala,
+    crossScalaVersions                := allScala,
+    parallelExecution in Test         := false,
+    fork in Test                      := true,
+    fork in run                       := true,
+    publishArtifact in Test           := false,
+    assemblyJarName in assembly       := "zio-amqp-" + version.value + ".jar",
+    test in assembly                  := {},
+    target in assembly                := file(baseDirectory.value + "/../bin/"),
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", xs @ _*)       => MergeStrategy.discard
       case n if n.startsWith("reference.conf") => MergeStrategy.concat
@@ -34,7 +34,7 @@ inThisBuild(
   )
 )
 
-name := "zio-amqp"
+name              := "zio-amqp"
 scalafmtOnCompile := true
 
 val zioVersion = "1.0.10"
