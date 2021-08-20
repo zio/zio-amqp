@@ -83,7 +83,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               bodies <- channel
                           .consume(queue = queueName, consumerTag = "test")
                           .mapM { record =>
-                            println(s"consuming record ${new String(record.getBody)}")
+//                            println(s"consuming record ${new String(record.getBody)}")
                             ZIO.succeed(record)
                           }
                           .take(numMessages.toLong)
