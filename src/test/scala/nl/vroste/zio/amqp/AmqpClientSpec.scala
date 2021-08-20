@@ -67,7 +67,6 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse("amqp://guest:guest@localhost:5672"))
         println(uri)
         factory.setUri(uri)
-        var i              = 1
 
         (Amqp
           .connect(factory)
