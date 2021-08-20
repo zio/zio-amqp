@@ -30,12 +30,17 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
 
   /**
    * Declare a queue
-   * @param queue Name of the queue. If left empty, a random queue name is used
-   * @param durable True if we are declaring a durable queue (the queue will survive a server restart)
-   * @param exclusive Exclusive to this connection
-   * @param autoDelete True if we are declaring an autodelete queue (server will delete it when no longer in use)
+   * @param queue
+   *   Name of the queue. If left empty, a random queue name is used
+   * @param durable
+   *   True if we are declaring a durable queue (the queue will survive a server restart)
+   * @param exclusive
+   *   Exclusive to this connection
+   * @param autoDelete
+   *   True if we are declaring an autodelete queue (server will delete it when no longer in use)
    * @param arguments
-   * @return The name of the created queue
+   * @return
+   *   The name of the created queue
    */
   def queueDeclare(
     queue: String = "",
@@ -50,9 +55,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   /**
    * Delete a queue
    *
-   * @param queue Name of the queue
-   * @param ifUnused True if the queue should be deleted only if not in use
-   * @param ifEmpty True if the queue should be deleted only if empty
+   * @param queue
+   *   Name of the queue
+   * @param ifUnused
+   *   True if the queue should be deleted only if not in use
+   * @param ifEmpty
+   *   True if the queue should be deleted only if empty
    */
   def queueDelete(
     queue: String = "",
@@ -167,8 +175,10 @@ object Amqp {
   /**
    * Creates a Connection
    *
-   * @param factory Connection factory
-   * @return Connection as a managed resource
+   * @param factory
+   *   Connection factory
+   * @return
+   *   Connection as a managed resource
    */
   def connect(factory: ConnectionFactory): ZManaged[Blocking, Throwable, Connection] =
     effectBlocking(factory.newConnection())
