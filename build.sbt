@@ -37,7 +37,7 @@ inThisBuild(
 name              := "zio-amqp"
 scalafmtOnCompile := true
 
-val zioVersion = "1.0.10"
+val zioVersion = "1.0.11"
 
 libraryDependencies ++= Seq(
   "dev.zio"                %% "zio-streams"                 % zioVersion,
