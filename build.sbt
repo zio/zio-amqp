@@ -39,8 +39,6 @@ scalafmtOnCompile := true
 
 val zioVersion = "1.0.11"
 
-scalacOptions += "-Ymacro-annotations"
-
 libraryDependencies ++= Seq(
   "dev.zio"                %% "zio-streams"                 % zioVersion,
   "dev.zio"                %% "zio-test"                    % zioVersion % Test,
@@ -49,8 +47,7 @@ libraryDependencies ++= Seq(
   "com.rabbitmq"            % "amqp-client"                 % "5.13.1",
   "ch.qos.logback"          % "logback-classic"             % "1.2.5"    % Test,
   "org.scala-lang.modules" %% "scala-collection-compat"     % "2.5.0",
-  "io.estatico"            %% "newtype"                     % "0.4.4",
-  "com.beachape"           %% "enumeratum"                  % "1.7.0"
+  "dev.zio"                %% "zio-prelude"                 % "1.0.0-RC6"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

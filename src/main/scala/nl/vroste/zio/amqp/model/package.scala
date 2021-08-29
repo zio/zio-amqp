@@ -1,19 +1,20 @@
 package nl.vroste.zio.amqp
 
-import io.estatico.newtype.macros.newtype
+import zio.prelude.Subtype
 
 package object model {
-  @newtype case class QueueName(name: String)
+  object QueueName extends Subtype[String]
+  type QueueName = QueueName.Type
 
-  @newtype case class ExchangeName(name: String)
+  object ExchangeName extends Subtype[String]
+  type ExchangeName = ExchangeName.Type
 
-  @newtype case class RoutingKey(key: String)
+  object RoutingKey extends Subtype[String]
+  type RoutingKey = RoutingKey.Type
 
-  @newtype case class ConsumerTag(tag: String)
+  object ConsumerTag extends Subtype[String]
+  type ConsumerTag = ConsumerTag.Type
 
-  @newtype case class DeliveryTag(tag: Long)
-
-  object DeliveryTag {
-    implicit val ordering: Ordering[DeliveryTag] = Ordering.by(_.tag)
-  }
+  object DeliveryTag extends Subtype[Long]
+  type DeliveryTag = DeliveryTag.Type
 }

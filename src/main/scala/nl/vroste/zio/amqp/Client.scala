@@ -1,7 +1,6 @@
 package nl.vroste.zio.amqp
 
 import com.rabbitmq.client.{ Channel => RChannel, _ }
-import io.estatico.newtype.ops.toCoercibleIdOps
 import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
 import zio._
 import zio.blocking.{ effectBlocking, Blocking }
@@ -36,7 +35,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, String] = withChannelBlocking(
-    _.queueDeclare(queue.coerce, durable, exclusive, autoDelete, arguments.asJava)
+    _.queueDeclare(queue, durable, exclusive, autoDelete, arguments.asJava)
   ).map(_.getQueue)
 
   /**
@@ -54,7 +53,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     ifUnused: Boolean = false,
     ifEmpty: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.queueDelete(queue.coerce, ifUnused, ifEmpty)
+    _.queueDelete(queue, ifUnused, ifEmpty)
   ).unit
 
   def exchangeDeclare(
@@ -65,14 +64,14 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDeclare(exchange.coerce, `type`.entryName, durable, autoDelete, internal, arguments.asJava)
+    _.exchangeDeclare(exchange, `type`, durable, autoDelete, internal, arguments.asJava)
   ).unit
 
   def exchangeDelete(
     exchange: ExchangeName,
     ifUnused: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDelete(exchange.coerce, ifUnused)
+    _.exchangeDelete(exchange, ifUnused)
   ).unit
 
   def queueBind(
@@ -81,7 +80,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     routingKey: RoutingKey,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.queueBind(queue.coerce, exchange.coerce, routingKey.coerce, arguments.asJava)
+    _.queueBind(queue, exchange, routingKey, arguments.asJava)
   ).unit
 
   def basicQos(
@@ -110,9 +109,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         withChannel { c =>
           effectBlocking {
             c.basicConsume(
-              queue.coerce,
+              queue,
               autoAck,
-              consumerTag.coerce,
+              consumerTag,
               new DeliverCallback                {
                 override def handle(consumerTag: String, message: Delivery): Unit =
                   offer(ZIO.succeed(Chunk.single(message)))
@@ -131,7 +130,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       .ensuring {
         withChannel(c =>
           effectBlocking(
-            c.basicCancel(consumerTag.coerce)
+            c.basicCancel(consumerTag)
           )
         ).ignore
       }
@@ -139,12 +138,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
       effectBlocking(
-        c.basicAck(deliveryTag.coerce, multiple)
+        c.basicAck(deliveryTag, multiple)
       )
     )
 
   def ackMany(deliveryTags: Seq[DeliveryTag]): ZIO[Blocking, Throwable, Unit] =
-    ack(deliveryTags.max, multiple = true)
+    ack(deliveryTags.max[Long], multiple = true)
 
   def nack(
     deliveryTag: DeliveryTag,
@@ -153,12 +152,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
       effectBlocking(
-        c.basicNack(deliveryTag.coerce, multiple, requeue)
+        c.basicNack(deliveryTag, multiple, requeue)
       )
     )
 
   def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
-    nack(deliveryTags.max, requeue, multiple = true)
+    nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def publish(
     exchange: ExchangeName,
@@ -170,7 +169,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
       effectBlocking(
-        c.basicPublish(exchange.coerce, routingKey.coerce, mandatory, immediate, props, body)
+        c.basicPublish(exchange, routingKey, mandatory, immediate, props, body)
       )
     )
 
