@@ -98,6 +98,6 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.exchangeDelete(exchangeName)
             } yield assert(messages.toSet)(equalTo(bodies.toSet))
           }
-      } @@ timeout(Duration(20, TimeUnit.SECONDS))
+      } @@ timeout(Duration(10, TimeUnit.SECONDS))
     )
 }
