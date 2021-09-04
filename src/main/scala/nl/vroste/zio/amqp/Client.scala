@@ -1,27 +1,13 @@
 package nl.vroste.zio.amqp
 
 import com.rabbitmq.client.{ Channel => RChannel, _ }
+import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
 import zio._
 import zio.blocking.{ effectBlocking, Blocking }
 import zio.stream.ZStream
 
 import java.net.URI
 import scala.jdk.CollectionConverters._
-
-sealed trait ExchangeType
-object ExchangeType {
-  case object Direct  extends ExchangeType
-  case object Fanout  extends ExchangeType
-  case object Topic   extends ExchangeType
-  case object Headers extends ExchangeType
-
-  def toRabbitMqType(t: ExchangeType): BuiltinExchangeType = t match {
-    case Direct  => BuiltinExchangeType.DIRECT
-    case Fanout  => BuiltinExchangeType.FANOUT
-    case Topic   => BuiltinExchangeType.TOPIC
-    case Headers => BuiltinExchangeType.HEADERS
-  }
-}
 
 /**
  * Thread-safe access to a RabbitMQ Channel
@@ -43,13 +29,19 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    *   The name of the created queue
    */
   def queueDeclare(
-    queue: String = "",
+    queue: QueueName,
     durable: Boolean = false,
     exclusive: Boolean = false,
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, String] = withChannelBlocking(
-    _.queueDeclare(queue, durable, exclusive, autoDelete, arguments.asJava)
+    _.queueDeclare(
+      QueueName.unwrap(queue),
+      durable,
+      exclusive,
+      autoDelete,
+      arguments.asJava
+    )
   ).map(_.getQueue)
 
   /**
@@ -63,38 +55,58 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    *   True if the queue should be deleted only if empty
    */
   def queueDelete(
-    queue: String = "",
+    queue: QueueName,
     ifUnused: Boolean = false,
     ifEmpty: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.queueDelete(queue, ifUnused, ifEmpty)
+    _.queueDelete(
+      QueueName.unwrap(queue),
+      ifUnused,
+      ifEmpty
+    )
   ).unit
 
   def exchangeDeclare(
-    exchange: String,
+    exchange: ExchangeName,
     `type`: ExchangeType,
     durable: Boolean = false,
     autoDelete: Boolean = false,
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDeclare(exchange, ExchangeType.toRabbitMqType(`type`), durable, autoDelete, internal, arguments.asJava)
+    _.exchangeDeclare(
+      ExchangeName.unwrap(exchange),
+      `type`,
+      durable,
+      autoDelete,
+      internal,
+      arguments.asJava
+    )
   ).unit
 
   def exchangeDelete(
-    queue: String = "",
+    exchange: ExchangeName,
     ifUnused: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDelete(queue, ifUnused)
+    _.exchangeDelete(
+      ExchangeName.unwrap(exchange),
+      ifUnused
+    )
   ).unit
 
   def queueBind(
-    queue: String,
-    exchange: String,
-    routingKey: String,
+    queue: QueueName,
+    exchange: ExchangeName,
+    routingKey: RoutingKey,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Blocking, Throwable, Unit] =
-    withChannelBlocking(_.queueBind(queue, exchange, routingKey, arguments.asJava)).unit
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
+    _.queueBind(
+      QueueName.unwrap(queue),
+      ExchangeName.unwrap(exchange),
+      RoutingKey.unwrap(routingKey),
+      arguments.asJava
+    )
+  ).unit
 
   def basicQos(
     count: Int,
@@ -113,8 +125,8 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * @return
    */
   def consume(
-    queue: String,
-    consumerTag: String,
+    queue: QueueName,
+    consumerTag: ConsumerTag,
     autoAck: Boolean = false
   ): ZStream[Blocking, Throwable, Delivery] =
     ZStream
@@ -122,9 +134,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         withChannel { c =>
           effectBlocking {
             c.basicConsume(
-              queue,
+              QueueName.unwrap(queue),
               autoAck,
-              consumerTag,
+              ConsumerTag.unwrap(consumerTag),
               new DeliverCallback                {
                 override def handle(consumerTag: String, message: Delivery): Unit =
                   offer(ZIO.succeed(Chunk.single(message)))
@@ -141,34 +153,57 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         }
       }
       .ensuring {
-        withChannel(c => effectBlocking(c.basicCancel(consumerTag))).ignore
+        withChannel(c =>
+          effectBlocking(
+            c.basicCancel(ConsumerTag.unwrap(consumerTag))
+          )
+        ).ignore
       }
 
-  def ack(deliveryTag: Long, multiple: Boolean = false): ZIO[Blocking, Throwable, Unit] =
-    withChannel(c => effectBlocking(c.basicAck(deliveryTag, multiple)))
+  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): ZIO[Blocking, Throwable, Unit] =
+    withChannel(c =>
+      effectBlocking(
+        c.basicAck(deliveryTag, multiple)
+      )
+    )
 
-  def ackMany(deliveryTag: Seq[Long]): ZIO[Blocking, Throwable, Unit] =
-    ack(deliveryTag.max, multiple = true)
+  def ackMany(deliveryTags: Seq[DeliveryTag]): ZIO[Blocking, Throwable, Unit] =
+    ack(deliveryTags.max[Long], multiple = true)
 
   def nack(
-    deliveryTag: Long,
+    deliveryTag: DeliveryTag,
     requeue: Boolean = false,
     multiple: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] =
-    withChannel(c => effectBlocking(c.basicNack(deliveryTag, multiple, requeue)))
+    withChannel(c =>
+      effectBlocking(
+        c.basicNack(deliveryTag, multiple, requeue)
+      )
+    )
 
-  def nackMany(deliveryTag: Seq[Long], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
-    nack(deliveryTag.max, requeue, multiple = true)
+  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
+    nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def publish(
-    exchange: String,
+    exchange: ExchangeName,
     body: Array[Byte],
-    routingKey: String = "",
+    routingKey: RoutingKey = RoutingKey(""),
     mandatory: Boolean = false,
     immediate: Boolean = false,
     props: AMQP.BasicProperties = new AMQP.BasicProperties()
   ): ZIO[Blocking, Throwable, Unit] =
-    withChannel(c => effectBlocking(c.basicPublish(exchange, routingKey, mandatory, immediate, props, body)))
+    withChannel(c =>
+      effectBlocking(
+        c.basicPublish(
+          ExchangeName.unwrap(exchange),
+          RoutingKey.unwrap(routingKey),
+          mandatory,
+          immediate,
+          props,
+          body
+        )
+      )
+    )
 
   private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))

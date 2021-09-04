@@ -1,5 +1,6 @@
 package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
+import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
 import zio.ZIO
 import zio.duration.Duration
 import zio.test.Assertion.equalTo
@@ -16,8 +17,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
     suite("AmqpClientSpec")(
       testM("Amqp.consume delivers messages") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
-        val exchangeName   = s"exchange-$testAmqpSuffix"
-        val queueName      = s"queue-$testAmqpSuffix"
+        val exchangeName   = ExchangeName(s"exchange-$testAmqpSuffix")
+        val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val message1       = UUID.randomUUID().toString
         val message2       = UUID.randomUUID().toString
         val messages       = Set(message1, message2)
@@ -34,11 +35,11 @@ object AmqpClientSpec extends DefaultRunnableSpec {
             for {
               _      <- channel.queueDeclare(queueName)
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
-              _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
+              _      <- channel.queueBind(queueName, exchangeName, RoutingKey("myroutingkey"))
               _      <- channel.publish(exchangeName, message1.getBytes)
               _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
-                          .consume(queue = queueName, consumerTag = "test")
+                          .consume(queue = queueName, consumerTag = ConsumerTag("test"))
                           .mapM { record =>
                             println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
                             ZIO.succeed(record)
@@ -48,7 +49,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
                             println(s"At tag: $tag")
-                            channel.ack(tag)
+                            channel.ack(DeliveryTag(tag))
 
                           }
                           .map(_.map(r => new String(r.getBody)))
@@ -59,8 +60,8 @@ object AmqpClientSpec extends DefaultRunnableSpec {
       } @@ timeout(Duration(10, TimeUnit.SECONDS)),
       testM("Amqp.publish delivers messages with high concurrency") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
-        val exchangeName   = s"exchange-$testAmqpSuffix"
-        val queueName      = s"queue-$testAmqpSuffix"
+        val exchangeName   = ExchangeName(s"exchange-$testAmqpSuffix")
+        val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val numMessages    = 10000
         val messages       = (1 to numMessages).map(i => s"$i " + UUID.randomUUID.toString)
         val factory        = new ConnectionFactory()
@@ -76,11 +77,11 @@ object AmqpClientSpec extends DefaultRunnableSpec {
             for {
               _      <- channel.queueDeclare(queueName)
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
-              _      <- channel.queueBind(queueName, exchangeName, "myroutingkey")
+              _      <- channel.queueBind(queueName, exchangeName, RoutingKey("myroutingkey"))
               _      <-
                 ZIO.collectAllPar((0 until numMessages).map(i => channel.publish(exchangeName, messages(i).getBytes)))
               bodies <- channel
-                          .consume(queue = queueName, consumerTag = "test")
+                          .consume(queue = queueName, consumerTag = ConsumerTag("test"))
                           .mapM { record =>
 //                            println(s"consuming record ${new String(record.getBody)}")
                             ZIO.succeed(record)
@@ -89,7 +90,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
                           .runCollect
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
-                            channel.ack(tag)
+                            channel.ack(DeliveryTag(tag))
 
                           }
                           .map(_.map(r => new String(r.getBody)))
