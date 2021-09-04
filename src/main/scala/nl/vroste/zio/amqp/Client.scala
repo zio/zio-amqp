@@ -35,7 +35,13 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, String] = withChannelBlocking(
-    _.queueDeclare(queue, durable, exclusive, autoDelete, arguments.asJava)
+    _.queueDeclare(
+      QueueName.unwrap(queue),
+      durable,
+      exclusive,
+      autoDelete,
+      arguments.asJava
+    )
   ).map(_.getQueue)
 
   /**
@@ -53,7 +59,11 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     ifUnused: Boolean = false,
     ifEmpty: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.queueDelete(queue, ifUnused, ifEmpty)
+    _.queueDelete(
+      QueueName.unwrap(queue),
+      ifUnused,
+      ifEmpty
+    )
   ).unit
 
   def exchangeDeclare(
@@ -64,14 +74,24 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDeclare(exchange, `type`, durable, autoDelete, internal, arguments.asJava)
+    _.exchangeDeclare(
+      ExchangeName.unwrap(exchange),
+      `type`,
+      durable,
+      autoDelete,
+      internal,
+      arguments.asJava
+    )
   ).unit
 
   def exchangeDelete(
     exchange: ExchangeName,
     ifUnused: Boolean = false
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.exchangeDelete(exchange, ifUnused)
+    _.exchangeDelete(
+      ExchangeName.unwrap(exchange),
+      ifUnused
+    )
   ).unit
 
   def queueBind(
@@ -80,7 +100,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     routingKey: RoutingKey,
     arguments: Map[String, AnyRef] = Map.empty
   ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
-    _.queueBind(queue, exchange, routingKey, arguments.asJava)
+    _.queueBind(
+      QueueName.unwrap(queue),
+      ExchangeName.unwrap(exchange),
+      RoutingKey.unwrap(routingKey),
+      arguments.asJava
+    )
   ).unit
 
   def basicQos(
@@ -109,9 +134,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         withChannel { c =>
           effectBlocking {
             c.basicConsume(
-              queue,
+              QueueName.unwrap(queue),
               autoAck,
-              consumerTag,
+              ConsumerTag.unwrap(consumerTag),
               new DeliverCallback                {
                 override def handle(consumerTag: String, message: Delivery): Unit =
                   offer(ZIO.succeed(Chunk.single(message)))
@@ -130,7 +155,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       .ensuring {
         withChannel(c =>
           effectBlocking(
-            c.basicCancel(consumerTag)
+            c.basicCancel(ConsumerTag.unwrap(consumerTag))
           )
         ).ignore
       }
@@ -169,7 +194,14 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
       effectBlocking(
-        c.basicPublish(exchange, routingKey, mandatory, immediate, props, body)
+        c.basicPublish(
+          ExchangeName.unwrap(exchange),
+          RoutingKey.unwrap(routingKey),
+          mandatory,
+          immediate,
+          props,
+          body
+        )
       )
     )
 
