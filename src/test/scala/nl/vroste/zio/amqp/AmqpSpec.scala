@@ -1,18 +1,21 @@
 package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
-import nl.vroste.zio.amqp.model._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{ durationInt, Clock, Duration, ZIO }
+
+import nl.vroste.zio.amqp.connection.Connection
+import nl.vroste.zio.amqp.model._
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-object AmqpClientSpec extends DefaultRunnableSpec {
-  val fallback      = "amqp://guest:guest@0.0.0.0:5672"
+object AmqpSpec extends DefaultRunnableSpec {
+  val fallback = "amqp://guest:guest@0.0.0.0:5672"
+
   override def spec =
     suite("AmqpClientSpec")(
       test("Amqp.consume delivers messages") {
@@ -27,9 +30,10 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         println(uri)
         factory.setUri(uri)
 
-        (Amqp
+        Connection
           .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!"))) flatMap Amqp.createChannel)
+          .tapZIO(_ => ZIO(println("Connected!")))
+          .flatMap(_.createChannel)
           .tapZIO(_ => ZIO(println("Created channel!")))
           .use { channel =>
             for {
@@ -69,9 +73,10 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         println(uri)
         factory.setUri(uri)
 
-        (Amqp
+        Connection
           .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!"))) flatMap Amqp.createChannel)
+          .tapZIO(_ => ZIO(println("Connected!")))
+          .flatMap(_.createChannel)
           .tapZIO(_ => ZIO(println("Created channel!")))
           .use { channel =>
             for {
@@ -110,9 +115,9 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
         factory.setUri(uri)
 
-        Amqp
+        Connection
           .connect(factory)
-          .flatMap(Amqp.createChannel)
+          .flatMap(_.createChannel)
           .use { channel =>
             for {
               _ <- channel.queueDeclare(queueName)
@@ -128,9 +133,9 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
         factory.setUri(uri)
 
-        (Amqp
+        (Connection
           .connect(factory)
-          .flatMap(Amqp.createChannel)
+          .flatMap(_.createChannel)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
@@ -153,9 +158,9 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
         factory.setUri(uri)
 
-        (Amqp
+        (Connection
           .connect(factory)
-          .flatMap(Amqp.createChannel)
+          .flatMap(_.createChannel)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)

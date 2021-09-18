@@ -1,13 +1,13 @@
-package nl.vroste.zio.amqp
+package nl.vroste.zio.amqp.channel
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk
-import com.rabbitmq.client.{ Channel => RChannel, _ }
-import nl.vroste.zio.amqp.model._
+import com.rabbitmq.client.{ Channel => RChannel, Connection => RConnection, _ }
 import zio.ZIO.attemptBlocking
-import zio._
 import zio.stream.ZStream
+import zio.{ Chunk, Semaphore, Task, UIO, ZIO, ZManaged }
 
-import java.net.URI
+import nl.vroste.zio.amqp.model._
+
 import scala.jdk.CollectionConverters._
 
 /**
@@ -176,15 +176,18 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         ).ignore
       }
 
-  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): ZIO[Any, Throwable, Unit] =
+  def ackMany(deliveryTags: Seq[DeliveryTag]): Task[Unit] =
+    ack(deliveryTags.max[Long], multiple = true)
+
+  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): Task[Unit] =
     withChannel(c =>
       attemptBlocking(
         c.basicAck(deliveryTag, multiple)
       )
     )
 
-  def ackMany(deliveryTags: Seq[DeliveryTag]): ZIO[Any, Throwable, Unit] =
-    ack(deliveryTags.max[Long], multiple = true)
+  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): Task[Unit] =
+    nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def nack(
     deliveryTag: DeliveryTag,
@@ -196,9 +199,6 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         c.basicNack(deliveryTag, multiple, requeue)
       )
     )
-
-  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): ZIO[Any, Throwable, Unit] =
-    nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def publish(
     exchange: ExchangeName,
@@ -254,41 +254,23 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     access.withPermit(attemptBlocking(f(channel)))
 }
 
-object Amqp {
+object Channel {
+  private def release(sema: Semaphore): RChannel => UIO[Unit] = rchan =>
+    sema
+      .withPermit(Task {
+        rchan.close()
+      })
+      .orDie
 
-  /**
-   * Creates a Connection
-   *
-   * @param factory
-   *   Connection factory
-   * @return
-   *   Connection as a managed resource
-   */
-  def connect(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
-    attemptBlocking(factory.newConnection()).toManagedWith(c => UIO(c.close()))
+  private[amqp] def make(rconn: RConnection): ZManaged[Any, Throwable, Channel] = for {
+    sema  <- Semaphore.make(1).toManaged
+    rchan <- ZManaged.acquireReleaseWith(acquire(rconn))(release(sema))
+  } yield new Channel(rchan, sema)
 
-  def connect(uri: URI): ZManaged[Any, Throwable, Connection]               = {
-    val factory = new ConnectionFactory()
-    factory.setUri(uri)
-    connect(factory)
-  }
-  def connect(amqpConfig: AMQPConfig): ZManaged[Any, Throwable, Connection] = {
-    val factory = new ConnectionFactory()
-    factory.setUri(amqpConfig.toUri)
-    connect(factory)
-  }
-
-  /**
-   * Creates a Channel that is safe for concurrent access
-   *
-   * @param connection
-   * @return
-   */
-
-  def createChannel(connection: Connection): ZManaged[Any, Throwable, Channel] =
-    (for {
-      channel <- Task(connection.createChannel())
-      permit  <- Semaphore.make(1)
-    } yield new Channel(channel, permit)).toManagedWith(_.withChannel(c => attemptBlocking(c.close())).orDie)
-
+  private def acquire(rconn: RConnection): Task[RChannel] = for {
+    maybe <- Task(Option(rconn.createChannel()))
+    rchan <- Task.fromEither(
+               maybe.toRight(new RuntimeException("No channels available"))
+             )
+  } yield rchan
 }
