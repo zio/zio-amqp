@@ -205,10 +205,10 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       )
     )
 
-  private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
+  private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T])                               =
     access.withPermit(f(channel))
 
-  private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
+  private[amqp] def withChannelBlocking[R, T](f: RChannel => T)                                          =
     access.withPermit(effectBlocking(f(channel)))
 }
 
