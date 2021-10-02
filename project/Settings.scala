@@ -11,7 +11,7 @@ object Settings {
     )
   )
 
-  lazy val org  = Seq(
+  lazy val org = Seq(
     organization := "nl.vroste",
     homepage     := Some(url("https://github.com/svroonland/zio-amqp")),
     licenses     := List(
