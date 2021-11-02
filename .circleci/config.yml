@@ -6,7 +6,7 @@ parameters:
 jobs:
   lint:
     docker:
-      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.7
     steps:
       - checkout
       - restore_cache:
@@ -21,7 +21,7 @@ jobs:
             - "~/.cache/coursier/v1"
   test213_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u302_1.5.5_2.13.6
+      - image: hseeberger/scala-sbt:8u302_1.5.5_2.13.7
       - image: rabbitmq:latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
       - run: sbt ++2.13.6! test
   test213_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.7
       - image: rabbitmq:latest
     steps:
       - checkout
@@ -69,7 +69,7 @@ jobs:
       - run: sbt ++2.12.11! test
   release:
     docker:
-      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.6
+      - image: hseeberger/scala-sbt:11.0.12_1.5.5_2.13.7
     steps:
       - checkout
       - run: git fetch --tags
