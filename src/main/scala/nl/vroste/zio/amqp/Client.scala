@@ -205,7 +205,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       )
     )
 
-  private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
+  private[amqp] def withChannel[T](f: RChannel => Task[T]) =
     access.withPermit(f(channel))
 
   private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
@@ -237,6 +237,7 @@ object Amqp {
    * @param connection
    * @return
    */
+
   def createChannel(connection: Connection): ZManaged[Any, Throwable, Channel] =
     (for {
       channel <- Task(connection.createChannel())
