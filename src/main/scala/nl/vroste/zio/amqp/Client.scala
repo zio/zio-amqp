@@ -2,8 +2,8 @@ package nl.vroste.zio.amqp
 
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
-import zio.ZIO.attemptBlocking
 import zio._
+import zio.blocking.{ effectBlocking, Blocking }
 import zio.stream.ZStream
 
 import java.net.URI
@@ -34,7 +34,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     exclusive: Boolean = false,
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, String] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, String] = withChannelBlocking(
     _.queueDeclare(
       QueueName.unwrap(queue),
       durable,
@@ -58,7 +58,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     queue: QueueName,
     ifUnused: Boolean = false,
     ifEmpty: Boolean = false
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
     _.queueDelete(
       QueueName.unwrap(queue),
       ifUnused,
@@ -73,7 +73,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     autoDelete: Boolean = false,
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
     _.exchangeDeclare(
       ExchangeName.unwrap(exchange),
       `type`,
@@ -87,7 +87,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   def exchangeDelete(
     exchange: ExchangeName,
     ifUnused: Boolean = false
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
     _.exchangeDelete(
       ExchangeName.unwrap(exchange),
       ifUnused
@@ -99,7 +99,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     exchange: ExchangeName,
     routingKey: RoutingKey,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): ZIO[Blocking, Throwable, Unit] = withChannelBlocking(
     _.queueBind(
       QueueName.unwrap(queue),
       ExchangeName.unwrap(exchange),
@@ -111,7 +111,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   def basicQos(
     count: Int,
     global: Boolean = false
-  ): ZIO[Any, Throwable, Unit] =
+  ): ZIO[Blocking, Throwable, Unit] =
     withChannelBlocking(_.basicQos(count, global)).unit
 
   /**
@@ -128,11 +128,11 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     queue: QueueName,
     consumerTag: ConsumerTag,
     autoAck: Boolean = false
-  ): ZStream[Any, Throwable, Delivery] =
+  ): ZStream[Blocking, Throwable, Delivery] =
     ZStream
-      .asyncZIO[Any, Throwable, Delivery] { offer =>
+      .effectAsyncM[Blocking, Throwable, Delivery] { offer =>
         withChannel { c =>
-          attemptBlocking {
+          effectBlocking {
             c.basicConsume(
               QueueName.unwrap(queue),
               autoAck,
@@ -154,34 +154,34 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       }
       .ensuring {
         withChannel(c =>
-          attemptBlocking(
+          effectBlocking(
             c.basicCancel(ConsumerTag.unwrap(consumerTag))
           )
         ).ignore
       }
 
-  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): ZIO[Any, Throwable, Unit] =
+  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
-      attemptBlocking(
+      effectBlocking(
         c.basicAck(deliveryTag, multiple)
       )
     )
 
-  def ackMany(deliveryTags: Seq[DeliveryTag]): ZIO[Any, Throwable, Unit] =
+  def ackMany(deliveryTags: Seq[DeliveryTag]): ZIO[Blocking, Throwable, Unit] =
     ack(deliveryTags.max[Long], multiple = true)
 
   def nack(
     deliveryTag: DeliveryTag,
     requeue: Boolean = false,
     multiple: Boolean = false
-  ): ZIO[Any, Throwable, Unit] =
+  ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
-      attemptBlocking(
+      effectBlocking(
         c.basicNack(deliveryTag, multiple, requeue)
       )
     )
 
-  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): ZIO[Any, Throwable, Unit] =
+  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): ZIO[Blocking, Throwable, Unit] =
     nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def publish(
@@ -191,9 +191,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     mandatory: Boolean = false,
     immediate: Boolean = false,
     props: AMQP.BasicProperties = new AMQP.BasicProperties()
-  ): ZIO[Any, Throwable, Unit] =
+  ): ZIO[Blocking, Throwable, Unit] =
     withChannel(c =>
-      attemptBlocking(
+      effectBlocking(
         c.basicPublish(
           ExchangeName.unwrap(exchange),
           RoutingKey.unwrap(routingKey),
@@ -205,11 +205,11 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       )
     )
 
-  private[amqp] def withChannel[T](f: RChannel => Task[T]) =
+  private[amqp] def withChannel[R, T](f: RChannel => ZIO[R, Throwable, T]) =
     access.withPermit(f(channel))
 
   private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
-    access.withPermit(attemptBlocking(f(channel)))
+    access.withPermit(effectBlocking(f(channel)))
 }
 
 object Amqp {
@@ -222,10 +222,11 @@ object Amqp {
    * @return
    *   Connection as a managed resource
    */
-  def connect(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
-    attemptBlocking(factory.newConnection()).toManagedWith(c => UIO(c.close()))
+  def connect(factory: ConnectionFactory): ZManaged[Blocking, Throwable, Connection] =
+    effectBlocking(factory.newConnection())
+      .toManaged(c => UIO(c.close()))
 
-  def connect(uri: URI): ZManaged[Any, Throwable, Connection] = {
+  def connect(uri: URI): ZManaged[Blocking, Throwable, Connection] = {
     val factory = new ConnectionFactory()
     factory.setUri(uri)
     connect(factory)
@@ -237,11 +238,10 @@ object Amqp {
    * @param connection
    * @return
    */
-
-  def createChannel(connection: Connection): ZManaged[Any, Throwable, Channel] =
+  def createChannel(connection: Connection): ZManaged[Blocking, Throwable, Channel] =
     (for {
       channel <- Task(connection.createChannel())
       permit  <- Semaphore.make(1)
-    } yield new Channel(channel, permit)).toManagedWith(_.withChannel(c => attemptBlocking(c.close())).orDie)
+    } yield new Channel(channel, permit)).toManaged(_.withChannel(c => effectBlocking(c.close())).orDie)
 
 }
