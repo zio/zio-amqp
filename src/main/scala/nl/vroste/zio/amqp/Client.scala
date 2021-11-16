@@ -1,7 +1,7 @@
 package nl.vroste.zio.amqp
 
 import com.rabbitmq.client.{ Channel => RChannel, _ }
-import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
+import nl.vroste.zio.amqp.model._
 import zio.ZIO.attemptBlocking
 import zio._
 import zio.stream.ZStream
@@ -223,11 +223,16 @@ object Amqp {
    *   Connection as a managed resource
    */
   def connect(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
-    attemptBlocking(factory.newConnection()).toManagedWith(c => UIO(c.close()))
-
-  def connect(uri: URI): ZManaged[Any, Throwable, Connection] = {
+    attemptBlocking(factory.newConnection())
+      .toManagedWith(c => UIO(c.close()))
+  def connect(uri: URI): ZManaged[Any, Throwable, Connection]                   = {
     val factory = new ConnectionFactory()
     factory.setUri(uri)
+    connect(factory)
+  }
+  def connect(amqpConfig: AMQPConfig)                                           = {
+    val factory = new ConnectionFactory()
+    factory.setUri(amqpConfig.toUri)
     connect(factory)
   }
 
