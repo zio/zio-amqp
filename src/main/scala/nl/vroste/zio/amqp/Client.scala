@@ -1,5 +1,6 @@
 package nl.vroste.zio.amqp
 
+import com.rabbitmq.client.AMQP.Queue.DeclareOk
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
 import zio.ZIO.attemptBlocking
@@ -43,6 +44,21 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
       arguments.asJava
     )
   ).map(_.getQueue)
+
+  /**
+   * Check if a queue exists
+   * @param queue
+   *   Name of the queue.
+   * @return
+   *   a declaration-confirm method to indicate the queue exists
+   */
+  def queueDeclarePassive(
+    queue: QueueName
+  ): ZIO[Any, Throwable, DeclareOk] = withChannelBlocking(
+    _.queueDeclarePassive(
+      QueueName.unwrap(queue)
+    )
+  )
 
   /**
    * Delete a queue
@@ -204,6 +220,32 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
         )
       )
     )
+
+  /**
+   * Returns the number of messages in a queue ready to be delivered to consumers. This method assumes the queue exists.
+   * If it doesn't, the channels will be closed with an exception.
+   *
+   * @param queue
+   *   the name of the queue
+   * @return
+   *   the number of messages in ready state
+   */
+  def messageCount(queue: QueueName): ZIO[Any, Throwable, Long] = withChannelBlocking { c =>
+    c.messageCount(QueueName.unwrap(queue))
+  }
+
+  /**
+   * Returns the number of consumers on a queue. This method assumes the queue exists. If it doesn't, the channel will
+   * be closed with an exception.
+   *
+   * @param queue
+   *   the name of the queue
+   * @return
+   *   the number of consumers
+   */
+  def consumerCount(queue: QueueName): ZIO[Any, Throwable, Long] = withChannelBlocking { c =>
+    c.consumerCount(QueueName.unwrap(queue))
+  }
 
   private[amqp] def withChannel[T](f: RChannel => Task[T]) =
     access.withPermit(f(channel))
