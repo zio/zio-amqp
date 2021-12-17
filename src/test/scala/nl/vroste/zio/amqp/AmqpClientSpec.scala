@@ -4,9 +4,11 @@ import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, Exchan
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
+import zio.{ durationInt, Clock, Duration, ZIO }
 import zio.{ Duration, ZIO }
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -97,6 +99,71 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.exchangeDelete(exchangeName)
             } yield assert(messages.toSet)(equalTo(bodies.toSet))
           }
+      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+      test("Amqp.declareQueuePassive checks if a queue exists") {
+        val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
+        val queueName      = QueueName(s"queue-$testAmqpSuffix")
+        val factory        = new ConnectionFactory()
+        val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
+        factory.setUri(uri)
+
+        Amqp
+          .connect(factory)
+          .flatMap(Amqp.createChannel)
+          .use { channel =>
+            for {
+              _ <- channel.queueDeclare(queueName)
+              q <- channel.queueDeclarePassive(queueName)
+              _ <- channel.queueDelete(queueName)
+            } yield assert(q.getQueue)(equalTo(QueueName.unwrap(queueName)))
+          }
+      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+      test("Amqp.messageCounts returns the number of messages in a queue ready to be delivered to consumers") {
+        val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
+        val queueName      = QueueName(s"queue-$testAmqpSuffix")
+        val factory        = new ConnectionFactory()
+        val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
+        factory.setUri(uri)
+
+        (Amqp
+          .connect(factory)
+          .flatMap(Amqp.createChannel)
+          .use { channel =>
+            for {
+              _      <- channel.queueDeclare(queueName)
+              before <- channel.messageCount(queueName)
+              _      <- channel.publish(
+                          ExchangeName(""),
+                          "ping".getBytes(StandardCharsets.UTF_8),
+                          RoutingKey(QueueName.unwrap(queueName))
+                        )
+              after  <- channel.messageCount(queueName).delay(1.second)
+              _      <- channel.queueDelete(queueName)
+            } yield assert(before -> after)(equalTo(0L -> 1L))
+          })
+          .provideSomeLayer(Clock.live)
+      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+      test("Amqp.consumerCounts the number of consumers on a queue") {
+        val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
+        val queueName      = QueueName(s"queue-$testAmqpSuffix")
+        val factory        = new ConnectionFactory()
+        val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
+        factory.setUri(uri)
+
+        (Amqp
+          .connect(factory)
+          .flatMap(Amqp.createChannel)
+          .use { channel =>
+            for {
+              _      <- channel.queueDeclare(queueName)
+              before <- channel.consumerCount(queueName)
+              fiber  <- channel.consume(queueName, ConsumerTag("tag")).runDrain.fork
+              after  <- channel.consumerCount(queueName).delay(1.second)
+              _      <- fiber.interrupt
+              _      <- channel.queueDelete(queueName)
+            } yield assert(before -> after)(equalTo(0L -> 1L))
+          })
+          .provideSomeLayer(Clock.live)
       } @@ timeout(Duration(10, TimeUnit.SECONDS))
     )
 }
