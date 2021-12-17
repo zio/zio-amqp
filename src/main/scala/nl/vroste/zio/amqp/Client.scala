@@ -230,7 +230,7 @@ object Amqp {
     factory.setUri(uri)
     connect(factory)
   }
-  def connect(amqpConfig: AMQPConfig)                                           = {
+  def connect(amqpConfig: AMQPConfig): ZManaged[Any, Throwable, Connection]     = {
     val factory = new ConnectionFactory()
     factory.setUri(amqpConfig.toUri)
     connect(factory)
