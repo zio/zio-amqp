@@ -6,7 +6,7 @@ lazy val `zio-amqp` = (project in file("."))
   .settings(name := "zio-amqp")
   .settings(Settings.org)
   .settings(
-    scalaVersion       := scala2_12,
+    scalaVersion       := mainScala2_13,
     crossScalaVersions := Seq(scala2_12, mainScala2_13, scala3)
   )
   .settings(

@@ -1,11 +1,10 @@
 package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
-import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
+import nl.vroste.zio.amqp.model._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{ durationInt, Clock, Duration, ZIO }
-import zio.{ Duration, ZIO }
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
