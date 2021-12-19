@@ -1,20 +1,22 @@
 package nl.vroste.zio.amqp.model
+import zio.{ durationInt, Duration }
+
 import java.net.URI
 
 case class AMQPConfig(
   user: String,
   password: String,
   vhost: String,
-  heartbeatInterval: Short,
+  heartbeatInterval: Duration,
   ssl: Boolean,
   host: String,
   port: Short,
-  connectionTimeout: Short
+  connectionTimeout: Duration
 ) {
   def toUri: AmqpUri =
     AmqpUri(
       new URI(
-        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$vhost?heartbeat=${heartbeatInterval}&connection_timeout=${connectionTimeout}"
+        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$vhost?heartbeat=${heartbeatInterval.toMillis}&connection_timeout=${connectionTimeout.toMillis}"
       )
     )
 }
@@ -23,11 +25,11 @@ object AMQPConfig {
     user = "guest",
     password = "guest",
     vhost = "/",
-    heartbeatInterval = 10,
+    heartbeatInterval = 10.seconds,
     ssl = false,
     host = "localhost",
     port = 5672,
-    connectionTimeout = 10
+    connectionTimeout = 10.seconds
   )
 
 }
