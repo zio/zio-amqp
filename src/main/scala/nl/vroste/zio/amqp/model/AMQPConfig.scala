@@ -16,7 +16,7 @@ case class AMQPConfig(
   def toUri: AmqpUri =
     AmqpUri(
       new URI(
-        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$vhost?heartbeat=${heartbeatInterval.toSeconds}&connection_timeout=${connectionTimeout.toMillis}"
+        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$vhost?heartbeat=${heartbeatInterval.getSeconds}&connection_timeout=${connectionTimeout.toMillis}"
       )
     )
 }
