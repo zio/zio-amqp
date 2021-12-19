@@ -2,6 +2,8 @@ package nl.vroste.zio.amqp
 
 import zio.prelude.{ Newtype, Subtype }
 
+import java.net.URI
+
 package object model {
   object QueueName extends Newtype[String]
   type QueueName = QueueName.Type
@@ -19,4 +21,7 @@ package object model {
   // because we need ordering
   object DeliveryTag extends Subtype[Long]
   type DeliveryTag = DeliveryTag.Type
+
+  object AmqpUri extends Subtype[URI]
+  type AmqpUri = AmqpUri.Type
 }
