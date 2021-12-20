@@ -10,7 +10,7 @@ object Dependencies {
     "dev.zio"                %% "zio-interop-reactivestreams" % "1.3.8",
     "com.rabbitmq"            % "amqp-client"                 % "5.13.1",
     "ch.qos.logback"          % "logback-classic"             % "1.2.9"    % Test,
-    "org.scala-lang.modules" %% "scala-collection-compat"     % "2.5.0",
+    "org.scala-lang.modules" %% "scala-collection-compat"     % "2.6.0",
     "dev.zio"                %% "zio-prelude"                 % "1.0.0-RC6"
   )
 }
