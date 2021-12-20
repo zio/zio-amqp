@@ -1,6 +1,6 @@
 package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
-import nl.vroste.zio.amqp.model.{ ConsumerTag, DeliveryTag, ExchangeName, ExchangeType, QueueName, RoutingKey }
+import nl.vroste.zio.amqp.model._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
