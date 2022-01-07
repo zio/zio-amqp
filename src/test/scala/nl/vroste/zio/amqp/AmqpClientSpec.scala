@@ -76,7 +76,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
-              _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
+              _      <- channel.exchangeDeclare0(exchangeName, "fanout")
               _      <- channel.queueBind(queueName, exchangeName, RoutingKey("myroutingkey"))
               _      <-
                 ZIO.foreachParDiscard(0 until numMessages)(i => channel.publish(exchangeName, messages(i).getBytes))

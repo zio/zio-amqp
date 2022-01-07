@@ -100,6 +100,26 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     )
   ).unit
 
+  // would like to overload [[exchangeDeclare]], but it's a known limitation to scala to not allow overloading methods with default params
+  // https://stackoverflow.com/questions/4652095/why-does-the-scala-compiler-disallow-overloaded-methods-with-default-arguments
+  def exchangeDeclare0(
+    exchange: ExchangeName,
+    `type`: String,
+    durable: Boolean = false,
+    autoDelete: Boolean = false,
+    internal: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
+  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+    _.exchangeDeclare(
+      ExchangeName.unwrap(exchange),
+      `type`,
+      durable,
+      autoDelete,
+      internal,
+      arguments.asJava
+    )
+  ).unit
+
   def exchangeDelete(
     exchange: ExchangeName,
     ifUnused: Boolean = false
