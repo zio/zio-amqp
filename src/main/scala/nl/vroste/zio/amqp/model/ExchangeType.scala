@@ -17,6 +17,9 @@ object ExchangeType {
   case object Headers extends ExchangeType {
     override val name: String = "headers"
   }
+  case class Custom(`type`: String) extends ExchangeType {
+    override val name: String = `type`
+  }
 
   implicit def represent(`type`: ExchangeType): String = `type`.name
 }

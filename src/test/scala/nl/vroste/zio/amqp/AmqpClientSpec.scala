@@ -76,7 +76,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
-              _      <- channel.exchangeDeclare0(exchangeName, "fanout")
+              _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Custom("fanout")) // doesn't actually need to be a custom exchange type, just testing to make sure custom exchange types "work"
               _      <- channel.queueBind(queueName, exchangeName, RoutingKey("myroutingkey"))
               _      <-
                 ZIO.foreachParDiscard(0 until numMessages)(i => channel.publish(exchangeName, messages(i).getBytes))
