@@ -5,17 +5,20 @@ sealed trait ExchangeType extends Product with Serializable {
 }
 
 object ExchangeType {
-  case object Direct  extends ExchangeType {
+  case object Direct                extends ExchangeType {
     override val name: String = "direct"
   }
-  case object Fanout  extends ExchangeType {
+  case object Fanout                extends ExchangeType {
     override val name: String = "fanout"
   }
-  case object Topic   extends ExchangeType {
+  case object Topic                 extends ExchangeType {
     override val name: String = "topic"
   }
-  case object Headers extends ExchangeType {
+  case object Headers               extends ExchangeType {
     override val name: String = "headers"
+  }
+  case class Custom(`type`: String) extends ExchangeType {
+    override val name: String = `type`
   }
 
   implicit def represent(`type`: ExchangeType): String = `type`.name
