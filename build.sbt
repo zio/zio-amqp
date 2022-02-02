@@ -1,6 +1,6 @@
 lazy val mainScala2_13 = "2.13.7"
 lazy val scala2_12     = "2.12.15"
-lazy val scala3        = "3.1.0"
+lazy val scala3        = "3.1.1"
 
 lazy val `zio-amqp` = (project in file("."))
   .settings(name := "zio-amqp")
