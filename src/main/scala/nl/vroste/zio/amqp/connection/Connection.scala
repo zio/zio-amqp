@@ -2,14 +2,18 @@ package nl.vroste.zio.amqp.connection
 
 import com.rabbitmq.client.{ Connection => RConnection, ConnectionFactory }
 import zio.ZIO.attemptBlocking
-import zio.{ RIO, Task, UIO, ZManaged }
+import zio.{ Task, ZManaged }
 
 import nl.vroste.zio.amqp.channel.Channel
 
 import java.net.URI
 
 final class Connection private[amqp] (rconnection: RConnection) {
-  def createChannel: ZManaged[Any, Throwable, Channel] = Channel.make(rconnection)
+  def createChannel: ZManaged[Any, Throwable, Channel] =
+    Channel.make(this)
+
+  private[amqp] def withConnectionBlocking[T](f: RConnection => T): Task[T] =
+    attemptBlocking(f(rconnection))
 }
 
 object Connection {
@@ -23,14 +27,15 @@ object Connection {
   def connect(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
     make(factory)
 
-  private[amqp] def make(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] = for {
-    rconn <- ZManaged.acquireReleaseWith(acquire(factory))(release)
-  } yield new Connection(rconn)
-
-  private def acquire(factory: ConnectionFactory): RIO[Any, RConnection] =
-    attemptBlocking(factory.newConnection())
-
-  private def release: RConnection => UIO[Unit] =
-    rconn => Task(rconn.close()).orDie
+  private[amqp] def make(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
+    ZManaged.acquireReleaseWith(
+      attemptBlocking(
+        factory.newConnection()
+      ).map(new Connection(_))
+    )(
+      _.withConnectionBlocking(
+        _.close()
+      ).orDie
+    )
 
 }

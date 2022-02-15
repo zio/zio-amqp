@@ -1,19 +1,20 @@
 package nl.vroste.zio.amqp.channel
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk
-import com.rabbitmq.client.{ Channel => RChannel, Connection => RConnection, _ }
+import com.rabbitmq.client.{ Channel => RChannel, _ }
 import zio.ZIO.attemptBlocking
 import zio.stream.ZStream
-import zio.{ Chunk, Semaphore, Task, UIO, ZIO, ZManaged }
+import zio.{ Chunk, Semaphore, Task, ZIO, ZManaged }
 
 import nl.vroste.zio.amqp.model._
+import nl.vroste.zio.amqp.connection.Connection
 
 import scala.jdk.CollectionConverters._
 
 /**
  * Thread-safe access to a RabbitMQ Channel
  */
-class Channel private[amqp] (channel: RChannel, access: Semaphore) {
+class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
 
   /**
    * Declare a queue
@@ -127,7 +128,7 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   def basicQos(
     count: Int,
     global: Boolean = false
-  ): ZIO[Any, Throwable, Unit] =
+  ): Task[Unit] =
     withChannelBlocking(_.basicQos(count, global)).unit
 
   /**
@@ -144,60 +145,57 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     queue: QueueName,
     consumerTag: ConsumerTag,
     autoAck: Boolean = false
-  ): ZStream[Any, Throwable, Delivery] =
-    ZStream
-      .asyncZIO[Any, Throwable, Delivery] { offer =>
-        withChannel { c =>
-          attemptBlocking {
-            c.basicConsume(
-              QueueName.unwrap(queue),
-              autoAck,
-              ConsumerTag.unwrap(consumerTag),
-              new DeliverCallback                {
-                override def handle(consumerTag: String, message: Delivery): Unit =
-                  offer(ZIO.succeed(Chunk.single(message)))
-              },
-              new CancelCallback                 {
-                override def handle(consumerTag: String): Unit = offer(ZIO.fail(None))
-              },
-              new ConsumerShutdownSignalCallback {
-                override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
-                  offer(ZIO.fail(Some(sig)))
-              }
-            )
+  ): ZStream[Any, Throwable, Delivery] = ZStream
+    .asyncZIO[Any, Throwable, Delivery](offer =>
+      withChannelBlocking(
+        _.basicConsume(
+          QueueName.unwrap(queue),
+          autoAck,
+          ConsumerTag.unwrap(consumerTag),
+          new DeliverCallback                {
+            override def handle(consumerTag: String, message: Delivery): Unit =
+              offer(ZIO.succeed(Chunk.single(message)))
+          },
+          new CancelCallback                 {
+            override def handle(consumerTag: String): Unit = offer(ZIO.fail(None))
+          },
+          new ConsumerShutdownSignalCallback {
+            override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
+              offer(ZIO.fail(Some(sig)))
           }
-        }
-      }
-      .ensuring {
-        withChannel(c =>
-          attemptBlocking(
-            c.basicCancel(ConsumerTag.unwrap(consumerTag))
-          )
-        ).ignore
-      }
+        )
+      )
+    )
+    .ensuring {
+      withChannelBlocking(
+        _.basicCancel(ConsumerTag.unwrap(consumerTag))
+      ).ignore
+    }
 
   def ackMany(deliveryTags: Seq[DeliveryTag]): Task[Unit] =
     ack(deliveryTags.max[Long], multiple = true)
 
-  def ack(deliveryTag: DeliveryTag, multiple: Boolean = false): Task[Unit] =
-    withChannel(c =>
-      attemptBlocking(
-        c.basicAck(deliveryTag, multiple)
-      )
+  def ack(
+    deliveryTag: DeliveryTag,
+    multiple: Boolean = false
+  ): Task[Unit] =
+    withChannelBlocking(
+      _.basicAck(deliveryTag, multiple)
     )
 
-  def nackMany(deliveryTags: Seq[DeliveryTag], requeue: Boolean = false): Task[Unit] =
+  def nackMany(
+    deliveryTags: Seq[DeliveryTag],
+    requeue: Boolean = false
+  ): Task[Unit] =
     nack(deliveryTags.max[Long], requeue, multiple = true)
 
   def nack(
     deliveryTag: DeliveryTag,
     requeue: Boolean = false,
     multiple: Boolean = false
-  ): ZIO[Any, Throwable, Unit] =
-    withChannel(c =>
-      attemptBlocking(
-        c.basicNack(deliveryTag, multiple, requeue)
-      )
+  ): Task[Unit] =
+    withChannelBlocking(
+      _.basicNack(deliveryTag, multiple, requeue)
     )
 
   def publish(
@@ -207,17 +205,15 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
     mandatory: Boolean = false,
     immediate: Boolean = false,
     props: AMQP.BasicProperties = new AMQP.BasicProperties()
-  ): ZIO[Any, Throwable, Unit] =
-    withChannel(c =>
-      attemptBlocking(
-        c.basicPublish(
-          ExchangeName.unwrap(exchange),
-          RoutingKey.unwrap(routingKey),
-          mandatory,
-          immediate,
-          props,
-          body
-        )
+  ): Task[Unit] =
+    withChannelBlocking(
+      _.basicPublish(
+        ExchangeName.unwrap(exchange),
+        RoutingKey.unwrap(routingKey),
+        mandatory,
+        immediate,
+        props,
+        body
       )
     )
 
@@ -230,9 +226,10 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * @return
    *   the number of messages in ready state
    */
-  def messageCount(queue: QueueName): ZIO[Any, Throwable, Long] = withChannelBlocking { c =>
-    c.messageCount(QueueName.unwrap(queue))
-  }
+  def messageCount(queue: QueueName): Task[Long] =
+    withChannelBlocking(
+      _.messageCount(QueueName.unwrap(queue))
+    )
 
   /**
    * Returns the number of consumers on a queue. This method assumes the queue exists. If it doesn't, the channel will
@@ -243,34 +240,34 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * @return
    *   the number of consumers
    */
-  def consumerCount(queue: QueueName): ZIO[Any, Throwable, Long] = withChannelBlocking { c =>
-    c.consumerCount(QueueName.unwrap(queue))
-  }
+  def consumerCount(queue: QueueName): Task[Long] =
+    withChannelBlocking(
+      _.consumerCount(QueueName.unwrap(queue))
+    )
 
-  private[amqp] def withChannel[T](f: RChannel => Task[T]) =
-    access.withPermit(f(channel))
-
-  private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
-    access.withPermit(attemptBlocking(f(channel)))
+  private[amqp] def withChannelBlocking[T](f: RChannel => T) =
+    access.withPermit(attemptBlocking(f(rchannel)))
 }
 
 object Channel {
-  private def release(sema: Semaphore): RChannel => UIO[Unit] = rchan =>
-    sema
-      .withPermit(Task {
-        rchan.close()
-      })
-      .orDie
-
-  private[amqp] def make(rconn: RConnection): ZManaged[Any, Throwable, Channel] = for {
-    sema  <- Semaphore.make(1).toManaged
-    rchan <- ZManaged.acquireReleaseWith(acquire(rconn))(release(sema))
-  } yield new Channel(rchan, sema)
-
-  private def acquire(rconn: RConnection): Task[RChannel] = for {
-    maybe <- Task(Option(rconn.createChannel()))
-    rchan <- Task.fromEither(
-               maybe.toRight(new RuntimeException("No channels available"))
-             )
-  } yield rchan
+  private[amqp] def make(
+    connection: Connection
+  ): ZManaged[Any, Throwable, Channel] = ZManaged.acquireReleaseWith(
+    for {
+      sema  <- Semaphore.make(1)
+      rchan <- connection
+                 .withConnectionBlocking(rconn =>
+                   Option(
+                     rconn.createChannel()
+                   ).toRight(
+                     new RuntimeException("No channels available")
+                   )
+                 )
+                 .absolve
+    } yield new Channel(rchan, sema)
+  )(
+    _.withChannelBlocking(
+      _.close()
+    ).orDie
+  )
 }
