@@ -11,7 +11,9 @@ package object model {
   object ExchangeName extends Newtype[String]
   type ExchangeName = ExchangeName.Type
 
-  object RoutingKey extends Newtype[String]
+  object RoutingKey extends Newtype[String] {
+    lazy val default: RoutingKey = RoutingKey("")
+  }
   type RoutingKey = RoutingKey.Type
 
   object ConsumerTag extends Newtype[String]

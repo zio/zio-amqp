@@ -1,13 +1,14 @@
 package nl.vroste.zio.amqp.channel
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk
+import com.rabbitmq.client.AMQP.Exchange.{ DeclareOk => EDeclareOk, DeleteOk => EDeleteOk }
+import com.rabbitmq.client.AMQP.Queue.{ BindOk => QBindOk, DeclareOk => QDeclareOk, DeleteOk => QDeleteOk }
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import zio.ZIO.attemptBlocking
 import zio.stream.ZStream
 import zio.{ Chunk, Semaphore, Task, ZIO, ZManaged }
 
-import nl.vroste.zio.amqp.model._
 import nl.vroste.zio.amqp.connection.Connection
+import nl.vroste.zio.amqp.model._
 
 import scala.jdk.CollectionConverters._
 
@@ -28,7 +29,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
    *   True if we are declaring an autodelete queue (server will delete it when no longer in use)
    * @param arguments
    * @return
-   *   The name of the created queue
+   *   A declaration-confirm method to indicate the queue was successfully declared
    */
   def queueDeclare(
     queue: QueueName,
@@ -36,7 +37,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
     exclusive: Boolean = false,
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, String] = withChannelBlocking(
+  ): Task[QDeclareOk] = withChannelBlocking(
     _.queueDeclare(
       QueueName.unwrap(queue),
       durable,
@@ -44,18 +45,18 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
       autoDelete,
       arguments.asJava
     )
-  ).map(_.getQueue)
+  )
 
   /**
    * Check if a queue exists
    * @param queue
    *   Name of the queue.
    * @return
-   *   a declaration-confirm method to indicate the queue exists
+   *   A declaration-confirm method to indicate the queue exists
    */
   def queueDeclarePassive(
     queue: QueueName
-  ): ZIO[Any, Throwable, DeclareOk] = withChannelBlocking(
+  ): Task[QDeclareOk] = withChannelBlocking(
     _.queueDeclarePassive(
       QueueName.unwrap(queue)
     )
@@ -70,18 +71,20 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
    *   True if the queue should be deleted only if not in use
    * @param ifEmpty
    *   True if the queue should be deleted only if empty
+   * @return
+   *   A deletion-confirm method to indicate the queue was successfully deleted
    */
   def queueDelete(
     queue: QueueName,
     ifUnused: Boolean = false,
     ifEmpty: Boolean = false
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): Task[QDeleteOk] = withChannelBlocking(
     _.queueDelete(
       QueueName.unwrap(queue),
       ifUnused,
       ifEmpty
     )
-  ).unit
+  )
 
   def exchangeDeclare(
     exchange: ExchangeName,
@@ -90,7 +93,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
     autoDelete: Boolean = false,
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): Task[EDeclareOk] = withChannelBlocking(
     _.exchangeDeclare(
       ExchangeName.unwrap(exchange),
       `type`,
@@ -99,37 +102,38 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
       internal,
       arguments.asJava
     )
-  ).unit
+  )
 
   def exchangeDelete(
     exchange: ExchangeName,
     ifUnused: Boolean = false
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): Task[EDeleteOk] = withChannelBlocking(
     _.exchangeDelete(
       ExchangeName.unwrap(exchange),
       ifUnused
     )
-  ).unit
+  )
 
   def queueBind(
     queue: QueueName,
     exchange: ExchangeName,
     routingKey: RoutingKey,
     arguments: Map[String, AnyRef] = Map.empty
-  ): ZIO[Any, Throwable, Unit] = withChannelBlocking(
+  ): Task[QBindOk] = withChannelBlocking(
     _.queueBind(
       QueueName.unwrap(queue),
       ExchangeName.unwrap(exchange),
       RoutingKey.unwrap(routingKey),
       arguments.asJava
     )
-  ).unit
+  )
 
   def basicQos(
     count: Int,
     global: Boolean = false
-  ): Task[Unit] =
-    withChannelBlocking(_.basicQos(count, global)).unit
+  ): Task[Unit] = withChannelBlocking(
+    _.basicQos(count, global)
+  )
 
   /**
    * Consume a stream of messages from a queue
@@ -169,7 +173,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
     .ensuring {
       withChannelBlocking(
         _.basicCancel(ConsumerTag.unwrap(consumerTag))
-      ).ignore
+      ).orDie
     }
 
   def ackMany(deliveryTags: Seq[DeliveryTag]): Task[Unit] =
@@ -201,7 +205,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
   def publish(
     exchange: ExchangeName,
     body: Array[Byte],
-    routingKey: RoutingKey = RoutingKey(""),
+    routingKey: RoutingKey = RoutingKey.default,
     mandatory: Boolean = false,
     immediate: Boolean = false,
     props: AMQP.BasicProperties = new AMQP.BasicProperties()
@@ -245,7 +249,7 @@ class Channel private[amqp] (rchannel: RChannel, access: Semaphore) {
       _.consumerCount(QueueName.unwrap(queue))
     )
 
-  private[amqp] def withChannelBlocking[T](f: RChannel => T) =
+  private[amqp] def withChannelBlocking[T](f: RChannel => T): Task[T] =
     access.withPermit(attemptBlocking(f(rchannel)))
 }
 

@@ -39,15 +39,10 @@ object AmqpSpec extends DefaultRunnableSpec {
               _      <- channel.publish(exchangeName, message2.getBytes)
               bodies <- channel
                           .consume(queue = queueName, consumerTag = ConsumerTag("test"))
-                          .mapZIO { record =>
-                            println(s"${record.getEnvelope.getDeliveryTag}: ${new String(record.getBody)}")
-                            ZIO.succeed(record)
-                          }
                           .take(2)
                           .runCollect
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
-                            println(s"At tag: $tag")
                             channel.ack(DeliveryTag(tag))
                           }
                           .map(_.map(r => new String(r.getBody)))
@@ -73,17 +68,15 @@ object AmqpSpec extends DefaultRunnableSpec {
               _      <-
                 channel.exchangeDeclare(
                   exchangeName,
+                  // doesn't actually need to be a custom exchange type,
+                  // just testing to make sure custom exchange types "work"
                   ExchangeType.Custom("fanout")
-                ) // doesn't actually need to be a custom exchange type, just testing to make sure custom exchange types "work"
+                )
               _      <- channel.queueBind(queueName, exchangeName, RoutingKey("myroutingkey"))
               _      <-
                 ZIO.foreachParDiscard(0 until numMessages)(i => channel.publish(exchangeName, messages(i).getBytes))
               bodies <- channel
                           .consume(queue = queueName, consumerTag = ConsumerTag("test"))
-                          .mapZIO { record =>
-//                            println(s"consuming record ${new String(record.getBody)}")
-                            ZIO.succeed(record)
-                          }
                           .take(numMessages.toLong)
                           .runCollect
                           .tap { records =>
