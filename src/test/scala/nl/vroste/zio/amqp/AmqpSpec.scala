@@ -1,11 +1,11 @@
 package nl.vroste.zio.amqp
-import com.rabbitmq.client.ConnectionFactory
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{ durationInt, Clock, Duration, ZIO }
 
 import nl.vroste.zio.amqp.connection.Connection
+import nl.vroste.zio.amqp.connection.config.ConnectionConfig
 import nl.vroste.zio.amqp.model._
 
 import java.net.URI
@@ -25,16 +25,11 @@ object AmqpSpec extends DefaultRunnableSpec {
         val message1       = UUID.randomUUID().toString
         val message2       = UUID.randomUUID().toString
         val messages       = Set(message1, message2)
-        val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
-        println(uri)
-        factory.setUri(uri)
 
         Connection
-          .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!")))
-          .flatMap(_.createChannel)
-          .tapZIO(_ => ZIO(println("Created channel!")))
+          .managed(ConnectionConfig.uri(uri))
+          .flatMap(_.channelManaged)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
@@ -54,7 +49,6 @@ object AmqpSpec extends DefaultRunnableSpec {
                             val tag = records.last.getEnvelope.getDeliveryTag
                             println(s"At tag: $tag")
                             channel.ack(DeliveryTag(tag))
-
                           }
                           .map(_.map(r => new String(r.getBody)))
               _      <- channel.queueDelete(queueName)
@@ -68,16 +62,11 @@ object AmqpSpec extends DefaultRunnableSpec {
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val numMessages    = 10000
         val messages       = (1 to numMessages).map(i => s"$i " + UUID.randomUUID.toString)
-        val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
-        println(uri)
-        factory.setUri(uri)
 
         Connection
-          .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!")))
-          .flatMap(_.createChannel)
-          .tapZIO(_ => ZIO(println("Created channel!")))
+          .managed(ConnectionConfig.uri(uri))
+          .flatMap(_.channelManaged)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
@@ -100,7 +89,6 @@ object AmqpSpec extends DefaultRunnableSpec {
                           .tap { records =>
                             val tag = records.last.getEnvelope.getDeliveryTag
                             channel.ack(DeliveryTag(tag))
-
                           }
                           .map(_.map(r => new String(r.getBody)))
               _      <- channel.queueDelete(queueName)
@@ -111,13 +99,11 @@ object AmqpSpec extends DefaultRunnableSpec {
       test("Amqp.declareQueuePassive checks if a queue exists") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
-        val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
-        factory.setUri(uri)
 
         Connection
-          .connect(factory)
-          .flatMap(_.createChannel)
+          .managed(ConnectionConfig.uri(uri))
+          .flatMap(_.channelManaged)
           .use { channel =>
             for {
               _ <- channel.queueDeclare(queueName)
@@ -129,13 +115,11 @@ object AmqpSpec extends DefaultRunnableSpec {
       test("Amqp.messageCounts returns the number of messages in a queue ready to be delivered to consumers") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
-        val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
-        factory.setUri(uri)
 
-        (Connection
-          .connect(factory)
-          .flatMap(_.createChannel)
+        Connection
+          .managed(ConnectionConfig.uri(uri))
+          .flatMap(_.channelManaged)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
@@ -148,19 +132,17 @@ object AmqpSpec extends DefaultRunnableSpec {
               after  <- channel.messageCount(queueName).delay(1.second)
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
-          })
+          }
           .provideSomeLayer(Clock.live)
       } @@ timeout(Duration(10, TimeUnit.SECONDS)),
       test("Amqp.consumerCounts the number of consumers on a queue") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
-        val factory        = new ConnectionFactory()
         val uri            = URI.create(Option(System.getenv("AMQP_SERVER_URI")).getOrElse(fallback))
-        factory.setUri(uri)
 
-        (Connection
-          .connect(factory)
-          .flatMap(_.createChannel)
+        Connection
+          .managed(ConnectionConfig.uri(uri))
+          .flatMap(_.channelManaged)
           .use { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
@@ -170,7 +152,7 @@ object AmqpSpec extends DefaultRunnableSpec {
               _      <- fiber.interrupt
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
-          })
+          }
           .provideSomeLayer(Clock.live)
       } @@ timeout(Duration(10, TimeUnit.SECONDS))
     )

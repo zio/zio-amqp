@@ -2,14 +2,13 @@ package nl.vroste.zio.amqp.connection
 
 import com.rabbitmq.client.{ Connection => RConnection, ConnectionFactory }
 import zio.ZIO.attemptBlocking
-import zio.{ Task, ZManaged }
+import zio.{ Task, ZIO, ZManaged }
 
 import nl.vroste.zio.amqp.channel.Channel
-
-import java.net.URI
+import nl.vroste.zio.amqp.connection.config.ConnectionConfig
 
 final class Connection private[amqp] (rconnection: RConnection) {
-  def createChannel: ZManaged[Any, Throwable, Channel] =
+  def channelManaged: ZManaged[Any, Throwable, Channel] =
     Channel.make(this)
 
   private[amqp] def withConnectionBlocking[T](f: RConnection => T): Task[T] =
@@ -17,15 +16,10 @@ final class Connection private[amqp] (rconnection: RConnection) {
 }
 
 object Connection {
-
-  def connect(uri: URI): ZManaged[Any, Throwable, Connection] = {
-    val factory = new ConnectionFactory()
-    factory.setUri(uri)
-    make(factory)
-  }
-
-  def connect(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
-    make(factory)
+  def managed(config: ConnectionConfig): ZManaged[Any, Throwable, Connection] =
+    ZIO.attempt {
+      config.settings.foldRight(new ConnectionFactory)(_ apply _)
+    }.toManaged.flatMap(make)
 
   private[amqp] def make(factory: ConnectionFactory): ZManaged[Any, Throwable, Connection] =
     ZManaged.acquireReleaseWith(
