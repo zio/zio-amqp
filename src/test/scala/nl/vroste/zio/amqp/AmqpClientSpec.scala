@@ -2,16 +2,16 @@ package nl.vroste.zio.amqp
 import com.rabbitmq.client.ConnectionFactory
 import nl.vroste.zio.amqp.model._
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
+import zio.test.TestAspect.{ timeout, withLiveClock }
 import zio.test._
-import zio.{ durationInt, Clock, Duration, ZIO }
+import zio.{ durationInt, Duration, ZIO }
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-object AmqpClientSpec extends DefaultRunnableSpec {
+object AmqpClientSpec extends ZIOSpecDefault {
   val fallback      = "amqp://guest:guest@0.0.0.0:5672"
   override def spec =
     suite("AmqpClientSpec")(
@@ -27,11 +27,12 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         println(uri)
         factory.setUri(uri)
 
-        (Amqp
+        Amqp
           .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!"))) flatMap Amqp.createChannel)
-          .tapZIO(_ => ZIO(println("Created channel!")))
-          .use { channel =>
+          .tap(_ => ZIO.succeed(println("Connected!")))
+          .flatMap(Amqp.createChannel)
+          .tap(_ => ZIO.succeed(println("Created channel!")))
+          .flatMap { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
               _      <- channel.exchangeDeclare(exchangeName, ExchangeType.Fanout)
@@ -69,11 +70,12 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         println(uri)
         factory.setUri(uri)
 
-        (Amqp
+        Amqp
           .connect(factory)
-          .tapZIO(_ => ZIO(println("Connected!"))) flatMap Amqp.createChannel)
-          .tapZIO(_ => ZIO(println("Created channel!")))
-          .use { channel =>
+          .tap(_ => ZIO.debug("Connected!"))
+          .flatMap(Amqp.createChannel)
+          .tap(_ => ZIO.debug("Created channel!"))
+          .flatMap { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
               _      <-
@@ -113,7 +115,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         Amqp
           .connect(factory)
           .flatMap(Amqp.createChannel)
-          .use { channel =>
+          .flatMap { channel =>
             for {
               _ <- channel.queueDeclare(queueName)
               q <- channel.queueDeclarePassive(queueName)
@@ -131,7 +133,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         (Amqp
           .connect(factory)
           .flatMap(Amqp.createChannel)
-          .use { channel =>
+          .flatMap { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
               before <- channel.messageCount(queueName)
@@ -144,8 +146,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
           })
-          .provideSomeLayer(Clock.live)
-      } @@ timeout(Duration(10, TimeUnit.SECONDS)),
+      } @@ withLiveClock @@ timeout(Duration(10, TimeUnit.SECONDS)),
       test("Amqp.consumerCounts the number of consumers on a queue") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
@@ -156,7 +157,7 @@ object AmqpClientSpec extends DefaultRunnableSpec {
         (Amqp
           .connect(factory)
           .flatMap(Amqp.createChannel)
-          .use { channel =>
+          .flatMap { channel =>
             for {
               _      <- channel.queueDeclare(queueName)
               before <- channel.consumerCount(queueName)
@@ -166,7 +167,6 @@ object AmqpClientSpec extends DefaultRunnableSpec {
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
           })
-          .provideSomeLayer(Clock.live)
-      } @@ timeout(Duration(10, TimeUnit.SECONDS))
+      } @@ withLiveClock @@ timeout(Duration(10, TimeUnit.SECONDS))
     )
 }
