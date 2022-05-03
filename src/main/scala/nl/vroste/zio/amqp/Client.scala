@@ -265,7 +265,7 @@ object Amqp {
    *   Connection as a managed resource
    */
   def connect(factory: ConnectionFactory): ZIO[Scope, Throwable, Connection] =
-    ZIO.acquireRelease(attemptBlocking(factory.newConnection()))(c => UIO.attempt(c.close()).orDie)
+    ZIO.acquireRelease(attemptBlocking(factory.newConnection()))(c => ZIO.attempt(c.close()).orDie)
 
   def connect(uri: URI): ZIO[Scope, Throwable, Connection]               = {
     val factory = new ConnectionFactory()
@@ -287,7 +287,7 @@ object Amqp {
 
   def createChannel(connection: Connection): ZIO[Scope, Throwable, Channel] =
     (for {
-      channel <- Task.attempt(connection.createChannel())
+      channel <- ZIO.attempt(connection.createChannel())
       permit  <- Semaphore.make(1)
     } yield new Channel(channel, permit)).withFinalizer(_.withChannel(c => attemptBlocking(c.close())).orDie)
 
