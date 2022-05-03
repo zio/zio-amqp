@@ -12,7 +12,7 @@ Add to your build.sbt:
 libraryDependencies += "nl.vroste" %% "zio-amqp" % "<version>"
 ```
 
-The latest version is built against ZIO 2.0.0-RC5.
+The latest version is built against ZIO 2.0.0-RC6.
 
 ### Consuming
 
