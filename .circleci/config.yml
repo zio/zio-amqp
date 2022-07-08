@@ -42,7 +42,7 @@ jobs:
           path: target/test-reports
   test212_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u312_1.5.7_2.12.15
+      - image: hseeberger/scala-sbt:8u312_1.5.7_2.12.16
       - image: rabbitmq:latest
     steps:
       - checkout
@@ -60,7 +60,7 @@ jobs:
       - run: sbt ++3.1.0! test
   test212_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.12.15
+      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.12.16
       - image: rabbitmq:latest
     steps:
       - checkout
