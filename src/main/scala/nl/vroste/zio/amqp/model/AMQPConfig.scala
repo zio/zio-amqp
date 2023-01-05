@@ -1,7 +1,7 @@
 package nl.vroste.zio.amqp.model
 import zio.{ durationInt, Duration }
 
-import java.net.URI
+import java.net.{ URI, URLEncoder }
 
 case class AMQPConfig(
   user: String,
@@ -13,10 +13,11 @@ case class AMQPConfig(
   port: Short,
   connectionTimeout: Duration
 ) {
+  val encodedVhost   = URLEncoder.encode(vhost, "UTF-8")
   def toUri: AmqpUri =
     AmqpUri(
       new URI(
-        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$vhost?heartbeat=${heartbeatInterval.getSeconds}&connection_timeout=${connectionTimeout.toMillis}"
+        s"amqp${if (ssl) "s" else ""}://$user:$password@$host:$port/$encodedVhost?heartbeat=${heartbeatInterval.getSeconds}&connection_timeout=${connectionTimeout.toMillis}"
       )
     )
 }
