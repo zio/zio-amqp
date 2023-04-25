@@ -2,12 +2,23 @@ lazy val mainScala2_13 = "2.13.8"
 lazy val scala2_12     = "2.12.16"
 lazy val scala3        = "3.2.0"
 
+ThisBuild / crossScalaVersions := Seq(
+  mainScala2_13,
+  scala2_12,
+  scala3
+)
+
+ThisBuild / githubWorkflowJavaVersions ++= Seq(
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("11"),
+  JavaSpec.temurin("8"),
+)
+
 lazy val `zio-amqp` = (project in file("."))
   .settings(name := "zio-amqp")
   .settings(Settings.org)
   .settings(
-    scalaVersion       := mainScala2_13,
-    crossScalaVersions := Seq(scala2_12, mainScala2_13, scala3)
+    scalaVersion := mainScala2_13,
   )
   .settings(
     libraryDependencies ++= Dependencies.deps
