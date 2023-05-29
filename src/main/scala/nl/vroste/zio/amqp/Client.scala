@@ -251,9 +251,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * Purges the contents of the given queue.
    *
    * @param queue
-   * the name of the queue
+   *   the name of the queue
    * @return
-   * purge-confirm if the purge was executed successfully
+   *   purge-confirm if the purge was executed successfully
    */
   def purgeQueue(queue: QueueName): ZIO[Any, Throwable, PurgeOk] = withChannelBlocking { c =>
     c.queuePurge(QueueName.unwrap(queue))
