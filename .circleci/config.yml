@@ -56,6 +56,7 @@ jobs:
       - run: git fetch --tags
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+      - run: apt 
       - run: apt install -y gnupg
       - run: export GPG_TTY=$(tty)
       - run: echo $PGP_SECRET | base64 --decode | gpg --batch --import
