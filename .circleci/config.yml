@@ -6,12 +6,12 @@ parameters:
 jobs:
   lint:
     docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.13.7
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.6! check
+      - run: sbt ++2.13.11! check
       - save_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
           paths:
@@ -19,57 +19,38 @@ jobs:
             - "~/.sbt"
             - "~/.m2"
             - "~/.cache/coursier/v1"
-  test213_jdk8:
+  test213_jdk17:
     docker:
-      - image: hseeberger/scala-sbt:8u312_1.5.7_2.13.7
-      - image: rabbitmq:latest
-
-    steps:
-      - checkout
-      - restore_cache:
-          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.7! test
-  test213_jdk11:
-    docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.13.7
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
       - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.13.7! test
+      - run: sbt ++2.13.11! test
       - store_test_results:
-          path: target/test-reports
-  test212_jdk8:
+          path: target/test-reports 
+  test330_jdk17:
     docker:
-      - image: hseeberger/scala-sbt:8u312_1.5.7_2.12.15
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_3.3.0
       - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.12.14! test
-  test310_jdk11:
+      - run: sbt ++3.3.0! test
+  test212_jdk17:
     docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_3.1.0
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.12.18
       - image: rabbitmq:latest
     steps:
       - checkout
       - restore_cache:
           key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++3.1.0! test
-  test212_jdk11:
-    docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.12.15
-      - image: rabbitmq:latest
-    steps:
-      - checkout
-      - restore_cache:
-          key: sbt-cache-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
-      - run: sbt ++2.12.11! test
+      - run: sbt ++2.12.18! test
   release:
     docker:
-      - image: hseeberger/scala-sbt:11.0.13_1.5.7_2.13.7
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
     steps:
       - checkout
       - run: git fetch --tags
@@ -88,31 +69,19 @@ workflows:
           filters:
             tags:
               only: << pipeline.parameters.tag_regex >>
-      - test213_jdk8:
+      - test213_jdk17:
           requires:
             - lint
           filters:
             tags:
               only: << pipeline.parameters.tag_regex >>
-      - test213_jdk11:
+      - test212_jdk17:
           requires:
             - lint
           filters:
             tags:
               only: << pipeline.parameters.tag_regex >>
-      - test212_jdk8:
-          requires:
-            - lint
-          filters:
-            tags:
-              only: << pipeline.parameters.tag_regex >>
-      - test212_jdk11:
-          requires:
-            - lint
-          filters:
-            tags:
-              only: << pipeline.parameters.tag_regex >>
-      - test310_jdk11:
+      - test330_jdk17:
           requires:
             - lint
           filters:
@@ -120,11 +89,9 @@ workflows:
               only: << pipeline.parameters.tag_regex >>
       - release:
           requires:
-            - test213_jdk8
-            - test213_jdk11
-            - test212_jdk8
-            - test212_jdk11
-            - test310_jdk11
+            - test213_jdk17
+            - test212_jdk17
+            - test330_jdk17
           filters:
             branches:
               only:
