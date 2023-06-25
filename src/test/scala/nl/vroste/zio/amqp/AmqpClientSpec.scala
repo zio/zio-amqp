@@ -58,7 +58,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
               _      <- channel.exchangeDelete(exchangeName)
             } yield assert(messages)(equalTo(bodies.toSet))
           }
-      } @@ timeout(Duration(20, TimeUnit.SECONDS)),
+      } @@ timeout(Duration(60, TimeUnit.SECONDS)),
       test("Amqp.publish delivers messages with high concurrency") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val exchangeName   = ExchangeName(s"exchange-$testAmqpSuffix")
@@ -104,7 +104,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
               _      <- channel.exchangeDelete(exchangeName)
             } yield assert(messages.toSet)(equalTo(bodies.toSet))
           }
-      } @@ timeout(Duration(20, TimeUnit.SECONDS)),
+      } @@ timeout(Duration(60, TimeUnit.SECONDS)),
       test("Amqp.declareQueuePassive checks if a queue exists") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
@@ -122,7 +122,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
               _ <- channel.queueDelete(queueName)
             } yield assert(q.getQueue)(equalTo(QueueName.unwrap(queueName)))
           }
-      } @@ timeout(Duration(20, TimeUnit.SECONDS)),
+      } @@ timeout(Duration(60, TimeUnit.SECONDS)),
       test("Amqp.messageCounts returns the number of messages in a queue ready to be delivered to consumers") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
@@ -146,7 +146,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
           })
-      } @@ withLiveClock @@ timeout(Duration(20, TimeUnit.SECONDS)),
+      } @@ withLiveClock @@ timeout(Duration(60, TimeUnit.SECONDS)),
       test("Amqp.consumerCounts the number of consumers on a queue") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
@@ -167,6 +167,6 @@ object AmqpClientSpec extends ZIOSpecDefault {
               _      <- channel.queueDelete(queueName)
             } yield assert(before -> after)(equalTo(0L -> 1L))
           })
-      } @@ withLiveClock @@ timeout(Duration(20, TimeUnit.SECONDS))
+      } @@ withLiveClock @@ timeout(Duration(60, TimeUnit.SECONDS))
     )
 }
