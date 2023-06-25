@@ -1,6 +1,6 @@
 package nl.vroste.zio.amqp
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk
+import com.rabbitmq.client.AMQP.Queue.{ DeclareOk, PurgeOk }
 import com.rabbitmq.client.{ Channel => RChannel, _ }
 import nl.vroste.zio.amqp.model._
 import zio.ZIO.attemptBlocking
@@ -245,6 +245,18 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    */
   def consumerCount(queue: QueueName): ZIO[Any, Throwable, Long] = withChannelBlocking { c =>
     c.consumerCount(QueueName.unwrap(queue))
+  }
+
+  /**
+   * Purges the contents of the given queue.
+   *
+   * @param queue
+   *   the name of the queue
+   * @return
+   *   purge-confirm if the purge was executed successfully
+   */
+  def purgeQueue(queue: QueueName): ZIO[Any, Throwable, PurgeOk] = withChannelBlocking { c =>
+    c.queuePurge(QueueName.unwrap(queue))
   }
 
   private[amqp] def withChannel[T](f: RChannel => Task[T]) =
