@@ -6,7 +6,7 @@ parameters:
 jobs:
   lint:
     docker:
-      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.12
     steps:
       - checkout
       - restore_cache:
@@ -21,7 +21,7 @@ jobs:
             - "~/.cache/coursier/v1"
   test213_jdk17:
     docker:
-      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.12
       - image: rabbitmq:latest
     steps:
       - checkout
@@ -50,7 +50,7 @@ jobs:
       - run: sbt ++2.12.18! test
   release:
     docker:
-      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.11
+      - image: sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.5_8_1.9.0_2.13.12
     steps:
       - checkout
       - run: git fetch --tags
