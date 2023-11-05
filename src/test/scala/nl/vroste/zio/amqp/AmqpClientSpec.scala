@@ -13,9 +13,21 @@ import com.dimafeng.testcontainers.RabbitMQContainer
 import zio.ZLayer
 import zio.Scope
 
+final case class ContainerDetails(host: String, amqpPort: Int)
 object AmqpClientSpec extends ZIOSpecDefault {
-  val containerLayer =
-    ZLayer.fromZIO(ZIO.acquireRelease(ZIO.attempt(RabbitMQContainer.Def().start()))(c => ZIO.attempt(c.stop()).orDie))
+  val rabbitContainerDetails: ZLayer[Scope, Throwable, ContainerDetails] =
+    ZLayer.fromZIO(
+      zio.System.env("CI").flatMap {
+        case Some(_) =>
+          ZIO.succeed(ContainerDetails("localhost", 5672)).debug("Running on CI, using dedicated RabbitMQ")
+        case None    =>
+          ZIO
+            .acquireRelease(ZIO.attempt(RabbitMQContainer.Def().start()))(c => ZIO.attempt(c.stop()).orDie)
+            .map(c => ContainerDetails(c.host, c.amqpPort))
+            .debug("Running locally, using testcontainers RabbitMQ")
+
+      }
+    )
 
   override def spec =
     suite("AmqpClientSpec")(
@@ -28,7 +40,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
         val messages       = Set(message1, message2)
         val factory        = new ConnectionFactory()
 
-        ZIO.service[RabbitMQContainer].flatMap { container =>
+        ZIO.service[ContainerDetails].flatMap { container =>
           factory.setHost(container.host)
           factory.setPort(container.amqpPort)
           Amqp
@@ -71,7 +83,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
         val messages       = (1 to numMessages).map(i => s"$i " + UUID.randomUUID.toString)
         val factory        = new ConnectionFactory()
 
-        ZIO.service[RabbitMQContainer].flatMap { container =>
+        ZIO.service[ContainerDetails].flatMap { container =>
           factory.setHost(container.host)
           factory.setPort(container.amqpPort)
 
@@ -111,7 +123,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val factory        = new ConnectionFactory()
 
-        ZIO.service[RabbitMQContainer].flatMap { container =>
+        ZIO.service[ContainerDetails].flatMap { container =>
           factory.setHost(container.host)
           factory.setPort(container.amqpPort)
           Amqp
@@ -131,7 +143,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val factory        = new ConnectionFactory()
 
-        ZIO.service[RabbitMQContainer].flatMap { container =>
+        ZIO.service[ContainerDetails].flatMap { container =>
           factory.setHost(container.host)
           factory.setPort(container.amqpPort)
           Amqp
@@ -157,7 +169,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
         val queueName      = QueueName(s"queue-$testAmqpSuffix")
         val factory        = new ConnectionFactory()
 
-        ZIO.service[RabbitMQContainer].flatMap { container =>
+        ZIO.service[ContainerDetails].flatMap { container =>
           factory.setHost(container.host)
           factory.setPort(container.amqpPort)
           Amqp
@@ -175,5 +187,5 @@ object AmqpClientSpec extends ZIOSpecDefault {
             }
         }
       } @@ withLiveClock @@ timeout(Duration(60, TimeUnit.SECONDS))
-    ).provideSomeShared[Scope](containerLayer) @@ TestAspect.timed
+    ).provideSomeShared[Scope](rabbitContainerDetails) @@ TestAspect.timed @@ TestAspect.withLiveSystem
 }
