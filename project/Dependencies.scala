@@ -11,6 +11,6 @@ object Dependencies {
     "com.rabbitmq"            % "amqp-client"                 % "5.18.0",
     "ch.qos.logback"          % "logback-classic"             % "1.4.8"    % Test,
     "org.scala-lang.modules" %% "scala-collection-compat"     % "2.11.0",
-    "dev.zio"                %% "zio-prelude"                 % "1.0.0-RC19"
+    "dev.zio"                %% "zio-prelude"                 % "1.0.0-RC21"
   )
 }
