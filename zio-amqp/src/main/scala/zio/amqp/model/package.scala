@@ -1,8 +1,8 @@
-package nl.vroste.zio.amqp
-
-import zio.prelude.{ Newtype, Subtype }
+package zio.amqp
 
 import java.net.URI
+
+import zio.prelude.{ Newtype, Subtype }
 
 package object model {
   object QueueName extends Newtype[String]
