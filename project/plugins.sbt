@@ -6,5 +6,5 @@ addSbtPlugin("com.github.cb372"          % "sbt-explicit-dependencies" % "0.3.1"
 addSbtPlugin("org.portable-scala"        % "sbt-crossproject"          % "1.3.2")
 addSbtPlugin("com.eed3si9n"              % "sbt-buildinfo"             % "0.11.0")
 addSbtPlugin("ch.epfl.scala"             % "sbt-scalafix"              % "0.11.1")
-addSbtPlugin("de.heikoseeberger"         % "sbt-header"                % "5.6.5")
+addSbtPlugin("de.heikoseeberger"         % "sbt-header"                % "5.10.0")
 addSbtPlugin("dev.zio"                   % "zio-sbt-website"           % "0.3.10")
