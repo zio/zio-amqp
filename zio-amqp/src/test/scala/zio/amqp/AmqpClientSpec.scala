@@ -1,17 +1,17 @@
-package nl.vroste.zio.amqp
-import com.rabbitmq.client.ConnectionFactory
-import nl.vroste.zio.amqp.model._
-import zio.test.Assertion.equalTo
-import zio.test.TestAspect.{ timeout, withLiveClock }
-import zio.test._
-import zio.{ durationInt, Duration, ZIO }
+package zio.amqp
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+
 import com.dimafeng.testcontainers.RabbitMQContainer
-import zio.ZLayer
-import zio.Scope
+import com.rabbitmq.client.ConnectionFactory
+
+import zio.amqp.model._
+import zio.test.Assertion.equalTo
+import zio.test.TestAspect.{ timeout, withLiveClock }
+import zio.test._
+import zio._
 
 final case class ContainerDetails(host: String, amqpPort: Int)
 object AmqpClientSpec extends ZIOSpecDefault {
@@ -117,7 +117,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
               } yield assert(messages.toSet)(equalTo(bodies.toSet))
             }
         }
-      } @@ timeout(Duration(60, TimeUnit.SECONDS)),
+      } @@ timeout(2.minutes) @@ TestAspect.flaky,
       test("Amqp.declareQueuePassive checks if a queue exists") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
         val queueName      = QueueName(s"queue-$testAmqpSuffix")

@@ -1,14 +1,12 @@
-lazy val mainScala2_13 = "2.13.12"
-lazy val scala2_12     = "2.12.18"
-lazy val scala3        = "3.3.0"
+import BuildHelper._
 
-lazy val `zio-amqp` = (project in file("."))
+lazy val `zio-amqp` = (project in file("zio-amqp"))
   .settings(name := "zio-amqp")
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoSettings("zio.amqp"))
+  .settings(stdSettings("zio-amqp"))
+  .settings(dottySettings)
   .settings(Settings.org)
-  .settings(
-    scalaVersion       := mainScala2_13,
-    crossScalaVersions := Seq(scala2_12, mainScala2_13, scala3)
-  )
   .settings(
     libraryDependencies ++= Dependencies.deps
   )
