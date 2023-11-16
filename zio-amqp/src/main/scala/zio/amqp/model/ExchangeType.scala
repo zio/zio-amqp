@@ -1,7 +1,5 @@
 package zio.amqp.model
 
-import scala.language.implicitConversions
-
 sealed trait ExchangeType extends Product with Serializable {
   def name: String
 }
