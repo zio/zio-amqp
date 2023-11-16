@@ -17,7 +17,7 @@ lazy val root = project
     `zio-amqp`,
     docs
   )
-  .enablePlugins(ZioSbtCiPlugin)
+  .enablePlugins(ZioSbtCiPlugin, ZioSbtEcosystemPlugin)
 
 lazy val `zio-amqp` = (project in file("zio-amqp"))
   .settings(name := "zio-amqp")
