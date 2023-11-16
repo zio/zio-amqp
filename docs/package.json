@@ -1,0 +1,5 @@
+{
+  "name": "@zio.dev/zio-amqp",
+  "description": "ZIO AMQP Documentation",
+  "license": "Apache-2.0"
+}
