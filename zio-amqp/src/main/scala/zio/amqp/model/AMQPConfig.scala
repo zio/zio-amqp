@@ -1,7 +1,7 @@
 package zio.amqp.model
-import java.net.{ URI, URLEncoder }
+import zio.{ Duration, durationInt }
 
-import zio.{ durationInt, Duration }
+import java.net.{ URI, URLEncoder }
 
 case class AMQPConfig(
   user: String,

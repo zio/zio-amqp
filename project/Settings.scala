@@ -1,6 +1,5 @@
 import sbt.Keys.{ developers, homepage, licenses, organization, scmInfo }
 import sbt.{ url, Developer, ScmInfo }
-import BuildHelper._
 
 object Settings {
   lazy val devs = List(

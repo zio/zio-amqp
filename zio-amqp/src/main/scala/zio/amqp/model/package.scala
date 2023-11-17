@@ -1,8 +1,8 @@
 package zio.amqp
 
-import java.net.URI
-
 import zio.prelude.{ Newtype, Subtype }
+
+import java.net.URI
 
 package object model {
   object QueueName extends Newtype[String]
