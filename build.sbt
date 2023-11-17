@@ -1,9 +1,19 @@
+import zio.sbt.githubactions.Step.SingleStep
+
 inThisBuild(
   List(
     name               := "ZIO AMQP",
     crossScalaVersions := Seq(scalaVersion.value),
     developers         := Settings.devs,
-    ciEnabledBranches  := Seq("master")
+    ciEnabledBranches  := Seq("master"),
+    ciTestJobs         := ciTestJobs.value.map(x =>
+      x.copy(steps =
+        SingleStep(
+          name = "Start containers",
+          run = Some("docker-compose -f docker-compose.yml up -d --build")
+        ) +: x.steps
+      )
+    )
   )
 )
 
