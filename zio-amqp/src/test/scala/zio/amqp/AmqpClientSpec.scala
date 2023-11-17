@@ -1,17 +1,16 @@
 package zio.amqp
 
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-
 import com.dimafeng.testcontainers.RabbitMQContainer
 import com.rabbitmq.client.ConnectionFactory
-
 import zio._
 import zio.amqp.model._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{ timeout, withLiveClock }
 import zio.test._
+
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 final case class ContainerDetails(host: String, amqpPort: Int)
 object AmqpClientSpec extends ZIOSpecDefault {

@@ -1,16 +1,14 @@
 package zio.amqp
 
-import java.net.URI
-
-import scala.jdk.CollectionConverters._
-
 import com.rabbitmq.client.AMQP.Queue.{ DeclareOk, PurgeOk }
 import com.rabbitmq.client.{ Channel => RChannel, _ }
-
 import zio.ZIO.attemptBlocking
 import zio._
 import zio.amqp.model._
 import zio.stream.ZStream
+
+import java.net.URI
+import scala.jdk.CollectionConverters._
 
 /**
  * Thread-safe access to a RabbitMQ Channel
