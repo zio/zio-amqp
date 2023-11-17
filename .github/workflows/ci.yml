@@ -74,8 +74,6 @@ jobs:
         - '17'
         - '21'
     steps:
-    - name: Start containers
-      run: docker-compose -f docker-compose.yml up -d --build
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
@@ -90,6 +88,8 @@ jobs:
       uses: actions/checkout@v4.1.0
       with:
         fetch-depth: '0'
+    - name: Start containers
+      run: docker-compose -f docker-compose.yml up -d --build
     - name: Test
       run: sbt +test
   update-readme:

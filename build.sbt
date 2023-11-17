@@ -8,10 +8,11 @@ inThisBuild(
     ciEnabledBranches  := Seq("master"),
     ciTestJobs         := ciTestJobs.value.map(x =>
       x.copy(steps =
-        SingleStep(
-          name = "Start containers",
-          run = Some("docker-compose -f docker-compose.yml up -d --build")
-        ) +: x.steps
+        (x.steps.reverse.head +:
+          SingleStep(
+            name = "Start containers",
+            run = Some("docker-compose -f docker-compose.yml up -d --build")
+          ) +: x.steps.reverse.tail).reverse
       )
     )
   )
