@@ -3,7 +3,7 @@ import zio.sbt.githubactions.Step.SingleStep
 inThisBuild(
   List(
     name               := "ZIO AMQP",
-    crossScalaVersions := Seq(scalaVersion.value),
+    crossScalaVersions := Seq(scala212.value, scala213.value, scala3.value),
     developers         := Settings.devs,
     ciEnabledBranches  := Seq("master"),
     ciTestJobs         := ciTestJobs.value.map(x =>
