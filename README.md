@@ -55,12 +55,11 @@ val effect: ZIO[Any, Throwable, Unit] =
 
 val producer = ZIO.scoped {
   channel.flatMap { channel =>
-    channel
-      .basicPublish(
-        exchange = ExchangeName(""),
-        routingKey = RoutingKey("queueName"),
-        payload = Payload.from("Hello world".getBytes)
-      )
+    channel.publish(
+      exchange = ExchangeName(""),
+      routingKey = RoutingKey("queueName"),
+      body = "Hello world".getBytes
+    )
   }
 }
 ```
