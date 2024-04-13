@@ -12,7 +12,7 @@ object Dependencies {
     "com.dimafeng"           %% "testcontainers-scala-rabbitmq" % "0.41.0"   % Test,
     "dev.zio"                %% "zio-test"                      % zioVersion % Test,
     "dev.zio"                %% "zio-test-sbt"                  % zioVersion % Test,
-    "ch.qos.logback"          % "logback-classic"               % "1.5.3"    % Test,
+    "ch.qos.logback"          % "logback-classic"               % "1.5.5"    % Test,
     "org.scalameta"           % "semanticdb-scalac_2.13.12"     % "4.8.14"
   )
 }
