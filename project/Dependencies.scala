@@ -8,7 +8,7 @@ object Dependencies {
     "dev.zio"                %% "zio-interop-reactivestreams"   % "2.0.2",
     "com.rabbitmq"            % "amqp-client"                   % "5.20.0",
     "org.scala-lang.modules" %% "scala-collection-compat"       % "2.11.0",
-    "dev.zio"                %% "zio-prelude"                   % "1.0.0-RC23",
+    "dev.zio"                %% "zio-prelude"                   % "1.0.0-RC26",
     "com.dimafeng"           %% "testcontainers-scala-rabbitmq" % "0.41.0"   % Test,
     "dev.zio"                %% "zio-test"                      % zioVersion % Test,
     "dev.zio"                %% "zio-test-sbt"                  % zioVersion % Test,
