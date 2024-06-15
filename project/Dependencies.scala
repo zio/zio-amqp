@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val zioVersion = "2.0.22"
+  val zioVersion = "2.1.3"
   lazy val deps  = Seq(
     "dev.zio"                %% "zio-streams"                   % zioVersion,
     "dev.zio"                %% "zio-interop-reactivestreams"   % "2.0.2",
