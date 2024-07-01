@@ -1,8 +1,8 @@
 package zio.amqp
 
-import com.dimafeng.testcontainers.RabbitMQContainer
 import com.rabbitmq.client.ConnectionFactory
 import zio._
+import zio.amqp.RabbitContainerDetails.containerDetails
 import zio.amqp.model._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{ timeout, withLiveClock }
@@ -14,19 +14,6 @@ import java.util.concurrent.TimeUnit
 
 final case class ContainerDetails(host: String, amqpPort: Int)
 object AmqpClientSpec extends ZIOSpecDefault {
-  val rabbitContainerDetails: ZLayer[Scope, Throwable, ContainerDetails] =
-    ZLayer.fromZIO(
-      zio.System.env("CI").flatMap {
-        case Some(_) =>
-          ZIO.succeed(ContainerDetails("localhost", 5672)).debug("Running on CI, using dedicated RabbitMQ")
-        case None    =>
-          ZIO
-            .acquireRelease(ZIO.attempt(RabbitMQContainer.Def().start()))(c => ZIO.attempt(c.stop()).orDie)
-            .map(c => ContainerDetails(c.host, c.amqpPort))
-            .debug("Running locally, using testcontainers RabbitMQ")
-
-      }
-    )
 
   override def spec =
     suite("AmqpClientSpec")(
@@ -186,5 +173,5 @@ object AmqpClientSpec extends ZIOSpecDefault {
             }
         }
       } @@ withLiveClock @@ timeout(Duration(60, TimeUnit.SECONDS))
-    ).provideSomeShared[Scope](rabbitContainerDetails) @@ TestAspect.timed @@ TestAspect.withLiveSystem
+    ).provideSomeShared[Scope](containerDetails) @@ TestAspect.timed @@ TestAspect.withLiveSystem
 }
