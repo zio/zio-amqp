@@ -11,7 +11,7 @@ inThisBuild(
         (x.steps.reverse.head +:
           SingleStep(
             name = "Start containers",
-            run = Some("docker-compose -f docker-compose.yml up -d --build")
+            run = Some("docker compose -f docker-compose.yml up -d --build")
           ) +: x.steps.reverse.tail).reverse
       )
     )

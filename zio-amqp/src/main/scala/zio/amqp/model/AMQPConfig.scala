@@ -22,7 +22,7 @@ case class AMQPConfig(
     )
 }
 object AMQPConfig {
-  lazy val default = AMQPConfig(
+  lazy val default: AMQPConfig = AMQPConfig(
     user = "guest",
     password = "guest",
     vhost = "/",

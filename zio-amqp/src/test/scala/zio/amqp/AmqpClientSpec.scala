@@ -28,7 +28,7 @@ object AmqpClientSpec extends ZIOSpecDefault {
       }
     )
 
-  override def spec =
+  override def spec: Spec[Scope, Throwable] =
     suite("AmqpClientSpec")(
       test("Amqp.consume delivers messages") {
         val testAmqpSuffix = s"AmqpClientSpec-${UUID.randomUUID().toString}"
