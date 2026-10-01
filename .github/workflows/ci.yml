@@ -103,7 +103,7 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Start containers
-      run: docker-compose -f docker-compose.yml up -d --build
+      run: docker compose -f docker-compose.yml up -d --build
     - name: Test
       run: sbt --no-colors +test
   update-readme:
