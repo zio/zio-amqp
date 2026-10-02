@@ -93,8 +93,8 @@ object AmqpClientSpec extends ZIOSpecDefault {
             .tap(_ => ZIO.log("Created channel!"))
             .flatMap { channel =>
               for {
-                _      <- channel.queueDeclare(queueName)
-                _      <-
+                _ <- channel.queueDeclare(queueName)
+                _ <-
                   channel.exchangeDeclare(
                     exchangeName,
                     ExchangeType.Custom("fanout")
