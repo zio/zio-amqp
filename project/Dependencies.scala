@@ -12,6 +12,6 @@ object Dependencies {
     "com.dimafeng"           %% "testcontainers-scala-rabbitmq" % "0.41.8"   % Test,
     "dev.zio"                %% "zio-test"                      % zioVersion % Test,
     "dev.zio"                %% "zio-test-sbt"                  % zioVersion % Test,
-    "ch.qos.logback"          % "logback-classic"               % "1.5.38"   % Test
+    "ch.qos.logback"          % "logback-classic"               % "1.6.5"    % Test
   )
 }
