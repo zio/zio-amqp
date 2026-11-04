@@ -88,7 +88,7 @@ object PublishConsumeSpec extends ZIOSpecDefault {
 }
 ```
 
-The connection and the channel are scoped, and ZIO Test's `Scope` environment closes them when the test ends. Always put a `timeout` aspect on a test that consumes: a stream that waits for a message that never arrives would otherwise hang the build.
+The connection and the channel are scoped, and ZIO Test's `Scope` environment closes them when the test ends. Always put a `TestAspect.timeout` aspect on a test that consumes: a stream that waits for a message that never arrives would otherwise hang the build.
 
 ## Wait for Asynchronous Effects
 

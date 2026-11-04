@@ -254,6 +254,8 @@ The library has no method to remove a binding. Deleting the queue or the exchang
 
 ## Publishing
 
+Messages enter the broker through an exchange. One method sends them.
+
 ### Channel#publish
 
 `Channel#publish` sends one message to an exchange. The body is a byte array, so the encoding is up to the caller:
@@ -309,6 +311,8 @@ Publishing is safe to call from many fibers at once: calls queue up on the chann
 
 ## Consuming
 
+A consumer receives messages from a queue as a stream. Two methods start it and tune how much the broker sends ahead.
+
 ### Channel#consume
 
 `Channel#consume` registers a consumer on a queue and exposes the deliveries as a `ZStream` of the RabbitMQ client's `com.rabbitmq.client.Delivery`:
@@ -331,7 +335,7 @@ The parameters are:
 | `consumerTag` | Identifier of this consumer on the channel. It must be unique among the channel's active consumers.                          |
 | `autoAck`     | When `true`, the broker treats a message as acknowledged as soon as it sends it. When `false` (the default), the program must call `Channel#ack` or `Channel#nack`. |
 
-The consumer is registered when the stream starts running, not when `consume` is called. A `Delivery` has `getBody`, `getEnvelope` and `getProperties`: the envelope holds the delivery tag, the exchange, the routing key and the redelivery flag.
+The consumer is registered when the stream starts running, not when `Channel#consume` is called. A `Delivery` has `getBody`, `getEnvelope` and `getProperties`: the envelope holds the delivery tag, the exchange, the routing key and the redelivery flag.
 
 The stream behaves as follows:
 
@@ -450,7 +454,7 @@ withChannel { channel =>
 }
 ```
 
-`nack` is a RabbitMQ extension to AMQP 0-9-1, and it can reject several deliveries at once, which the standard `basic.reject` cannot.
+`Channel#nack` is a RabbitMQ extension to AMQP 0-9-1, and it can reject several deliveries at once, which the standard `basic.reject` cannot.
 
 ### Channel#nackMany
 

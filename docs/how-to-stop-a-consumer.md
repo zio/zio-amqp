@@ -40,7 +40,7 @@ def firstTen(channel: Channel): ZIO[Any, Throwable, Unit] =
 
 ## Stop When a Signal Arrives
 
-To stop a long-running worker from another fiber, for example when the application receives a termination signal, complete a `Promise` and halt the stream with `ZStream#haltWhen`. Put `haltWhen` before the processing stage: the stream then stops asking for new messages, but the message that is already being processed runs to completion and is acknowledged:
+To stop a long-running worker from another fiber, for example when the application receives a termination signal, complete a `Promise` and halt the stream with `ZStream#haltWhen`. Put `ZStream#haltWhen` before the processing stage: the stream then stops asking for new messages, but the message that is already being processed runs to completion and is acknowledged:
 
 ```scala mdoc:silent
 def gracefulWorker(channel: Channel, shutdown: Promise[Throwable, Unit]): ZIO[Any, Throwable, Unit] =

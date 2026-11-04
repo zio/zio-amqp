@@ -3,7 +3,7 @@ id: amqp
 title: "Amqp and AMQPConfig"
 ---
 
-`Amqp` is the entry point of the library. Its four methods acquire the two resources every program needs, a RabbitMQ `Connection` and a ZIO AMQP [`Channel`](./channel.md), and release them through the surrounding `Scope`. `AMQPConfig` describes how to reach the broker.
+`Amqp` is the entry point of the library. Its four methods acquire the two resources every program needs, a RabbitMQ `Connection` and a ZIO AMQP [`Channel`](./channel.md), and release them through the surrounding `Scope`. `AMQPConfig` describes how to reach the broker. The signatures are:
 
 ```scala
 object Amqp {
@@ -90,7 +90,7 @@ A single connection supports many channels. Create one channel per independent u
 
 ## AMQPConfig
 
-`AMQPConfig` is a case class in `zio.amqp.model` that holds everything needed to build an AMQP URI. It has no ZIO Config or JSON codec of its own, so load the values with the mechanism your application already uses and construct it by hand.
+`AMQPConfig` is a case class in `zio.amqp.model` that holds everything needed to build an AMQP URI. It has no ZIO Config or JSON codec of its own, so load the values with the mechanism your application already uses and construct it by hand. Its definition is:
 
 ```scala
 case class AMQPConfig(

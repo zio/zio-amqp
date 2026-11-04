@@ -3,7 +3,7 @@ id: model
 title: "Model Types"
 ---
 
-The `zio.amqp.model` package holds the small types that appear in the signatures of [`Amqp`](./amqp.md) and [`Channel`](./channel.md): five newtypes that keep queue names, exchange names, routing keys, consumer tags and delivery tags from being mixed up, a typed URI, and the `ExchangeType` of an exchange. [`AMQPConfig`](./amqp.md#amqpconfig) lives in the same package.
+The `zio.amqp.model` package holds the small types that appear in the signatures of [`Amqp`](./amqp.md) and [`Channel`](./channel.md): five newtypes that keep queue names, exchange names, routing keys, consumer tags and delivery tags from being mixed up, a typed URI, and the `ExchangeType` of an exchange. [`AMQPConfig`](./amqp.md#amqpconfig) lives in the same package. The examples on this page use the following import:
 
 ```scala mdoc:silent
 import zio.amqp.model._
