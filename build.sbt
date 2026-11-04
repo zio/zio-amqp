@@ -26,6 +26,7 @@ lazy val root = project
   )
   .aggregate(
     `zio-amqp`,
+    `zio-amqp-examples`,
     docs
   )
   .enablePlugins(ZioSbtCiPlugin, ZioSbtEcosystemPlugin)
@@ -62,6 +63,14 @@ lazy val `zio-amqp` = (project in file("zio-amqp"))
   .settings(
     scalafmtOnCompile := true
   )
+
+lazy val `zio-amqp-examples` = (project in file("zio-amqp-examples"))
+  .settings(stdSettings(Some("zio-amqp-examples")))
+  .settings(
+    publish / skip := true,
+    run / fork     := true
+  )
+  .dependsOn(`zio-amqp`)
 
 lazy val docs = project
   .in(file("zio-amqp-docs"))
