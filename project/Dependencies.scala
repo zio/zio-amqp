@@ -6,7 +6,7 @@ object Dependencies {
   lazy val deps  = Seq(
     "dev.zio"                %% "zio-streams"                   % zioVersion,
     "dev.zio"                %% "zio-interop-reactivestreams"   % "2.0.2",
-    "com.rabbitmq"            % "amqp-client"                   % "5.37.0",
+    "com.rabbitmq"            % "amqp-client"                   % "5.37.1",
     "org.scala-lang.modules" %% "scala-collection-compat"       % "2.14.0",
     "dev.zio"                %% "zio-prelude"                   % "1.0.0-RC48",
     "com.dimafeng"           %% "testcontainers-scala-rabbitmq" % "0.44.1"   % Test,
