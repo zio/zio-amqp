@@ -6,7 +6,22 @@ const sidebars = {
       collapsed: false,
       link: { type: "doc", id: "index" },
       items: [
-        "tutorial-work-queue",
+        {
+          type: "category",
+          label: "Reference",
+          items: [
+            "reference/amqp",
+            "reference/channel",
+            "reference/model"
+          ]
+        },
+        {
+          type: "category",
+          label: "Tutorial",
+          items: [
+            "tutorial-work-queue"
+          ]
+        },
         {
           type: "category",
           label: "How-to Guides",
@@ -18,15 +33,6 @@ const sidebars = {
             "how-to-publish-durable-messages",
             "how-to-stop-a-consumer",
             "how-to-test-with-testcontainers"
-          ]
-        },
-        {
-          type: "category",
-          label: "Reference",
-          items: [
-            "reference/amqp",
-            "reference/channel",
-            "reference/model"
           ]
         }
       ]
