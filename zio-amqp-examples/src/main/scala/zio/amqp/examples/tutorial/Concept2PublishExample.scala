@@ -1,5 +1,5 @@
 //> using scala 2.13
-//> using dep dev.zio::zio-amqp:1.0.1
+//> using dep dev.zio::zio-amqp:1.0.2
 // Run from this folder:  scala-cli run Concept2PublishExample.scala
 // Or from the repository root:  sbt "zio-amqp-examples/runMain zio.amqp.examples.tutorial.Concept2PublishExample"
 
