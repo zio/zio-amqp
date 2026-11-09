@@ -13,7 +13,7 @@ ZIO AMQP is a ZIO-based wrapper around the [RabbitMQ Java client](https://www.ra
 Add the following line to your `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-amqp" % "1.0.1"
+libraryDependencies += "dev.zio" %% "zio-amqp" % "1.0.2"
 ```
 
 ZIO AMQP depends on ZIO 2 and the RabbitMQ Java client, and is published for Scala 2.12, 2.13 and 3.
