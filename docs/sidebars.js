@@ -9,6 +9,7 @@ const sidebars = {
         {
           type: "category",
           label: "Reference",
+          collapsed: false,
           items: [
             "reference/amqp",
             "reference/channel",
@@ -18,6 +19,7 @@ const sidebars = {
         {
           type: "category",
           label: "Tutorial",
+          collapsed: false,
           items: [
             "tutorial-work-queue"
           ]
@@ -25,6 +27,7 @@ const sidebars = {
         {
           type: "category",
           label: "How-to Guides",
+          collapsed: false,
           items: [
             "how-to-connect",
             "how-to-acknowledge-messages",
