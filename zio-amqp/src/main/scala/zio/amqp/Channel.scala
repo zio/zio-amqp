@@ -7,7 +7,6 @@ import zio._
 import zio.amqp.model._
 import zio.stream.ZStream
 
-import java.net.URI
 import scala.jdk.CollectionConverters._
 
 /**
@@ -264,43 +263,4 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
 
   private[amqp] def withChannelBlocking[R, T](f: RChannel => T) =
     access.withPermit(attemptBlocking(f(channel)))
-}
-
-object Amqp {
-
-  /**
-   * Creates a Connection
-   *
-   * @param factory
-   *   Connection factory
-   * @return
-   *   Connection as a managed resource
-   */
-  def connect(factory: ConnectionFactory): ZIO[Scope, Throwable, Connection] =
-    ZIO.acquireRelease(attemptBlocking(factory.newConnection()))(c => ZIO.attempt(c.close()).orDie)
-
-  def connect(uri: URI): ZIO[Scope, Throwable, Connection]               = {
-    val factory = new ConnectionFactory()
-    factory.setUri(uri)
-    connect(factory)
-  }
-  def connect(amqpConfig: AMQPConfig): ZIO[Scope, Throwable, Connection] = {
-    val factory = new ConnectionFactory()
-    factory.setUri(amqpConfig.toUri)
-    connect(factory)
-  }
-
-  /**
-   * Creates a Channel that is safe for concurrent access
-   *
-   * @param connection
-   * @return
-   */
-
-  def createChannel(connection: Connection): ZIO[Scope, Throwable, Channel] =
-    (for {
-      channel <- ZIO.attempt(connection.createChannel())
-      permit  <- Semaphore.make(1)
-    } yield new Channel(channel, permit)).withFinalizer(_.withChannel(c => attemptBlocking(c.close())).orDie)
-
 }
