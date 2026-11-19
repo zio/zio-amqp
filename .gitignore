@@ -113,3 +113,13 @@ metals.sbt
 # End of https://www.gitignore.io/api/sbt,scala,intellij+all
 .bsp/
 .vscode/
+
+### Docusaurus website ###
+website/node_modules
+website/build
+website/docs
+website/.docusaurus
+website/package-lock.json
+website/yarn.lock
+website/i18n
+website/static/api
