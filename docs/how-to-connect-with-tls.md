@@ -67,7 +67,7 @@ def connect(trustStorePath: String, password: Array[Char]): ZIO[Scope, Throwable
   }
 ```
 
-Avoid the no-argument `ConnectionFactory#useSslProtocol()`: it encrypts the connection but accepts any certificate, so it does not protect against an impostor.
+Avoid the no-argument `ConnectionFactory#useSslProtocol()` for a private certificate authority: it uses the JVM's default trust store, so it rejects a certificate the JVM does not trust, and it does not check that the certificate was issued for the host unless you also call `enableHostnameVerification()`.
 
 ## Present a Client Certificate
 
