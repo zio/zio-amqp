@@ -1,5 +1,5 @@
 //> using scala 2.13
-//> using dep dev.zio::zio-amqp:1.0.2
+//> using dep dev.zio::zio-amqp:1.0.3
 // Run from this folder:  scala-cli run Concept1ConnectExample.scala
 // Or from the repository root:  sbt "zio-amqp-examples/runMain zio.amqp.examples.tutorial.Concept1ConnectExample"
 
