@@ -22,6 +22,7 @@ docker compose up -d
 We also add the library to our project:
 
 ```scala
+// ZIO AMQP: ZIO wrapper around the RabbitMQ Java client (JVM)
 libraryDependencies += "dev.zio" %% "zio-amqp" % "@VERSION@"
 ```
 
