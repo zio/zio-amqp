@@ -12,11 +12,14 @@ The test code on this page needs libraries that are not dependencies of ZIO AMQP
 Add ZIO Test and the Testcontainers module for RabbitMQ to the test scope, and register the ZIO Test framework with sbt:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio"      %% "zio-test"                      % "2.1.26" % Test,
-  "dev.zio"      %% "zio-test-sbt"                  % "2.1.26" % Test,
-  "com.dimafeng" %% "testcontainers-scala-rabbitmq" % "0.44.1"        % Test
-)
+// ZIO Test: the test library (test scope)
+libraryDependencies += "dev.zio" %% "zio-test" % "2.1.26" % Test
+
+// ZIO Test sbt integration: runs ZIO Test suites from sbt (test scope)
+libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.1.26" % Test
+
+// Testcontainers for RabbitMQ: starts a real broker in Docker for tests (test scope)
+libraryDependencies += "com.dimafeng" %% "testcontainers-scala-rabbitmq" % "0.44.1" % Test
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 ```
