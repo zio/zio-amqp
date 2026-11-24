@@ -50,11 +50,13 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * @param exclusive
    *   True if the queue is exclusive to this connection
    * @param autoDelete
-   *   True if we are declaring an autodelete queue (server will delete it when no longer in use)
+   *   True if the broker deletes the queue when its last consumer is cancelled. A queue that never had a consumer is
+   *   not deleted
    * @param arguments
    *   Extra declaration arguments, passed to the broker as they are, such as `x-dead-letter-exchange`
    * @return
-   *   The name of the created queue
+   *   The name of the queue: the given name, or the name the broker generated for an empty `queue`. Declaring a queue
+   *   that already exists also returns its name
    */
   def queueDeclare(
     queue: QueueName,
@@ -118,7 +120,8 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * Declares an exchange. The `type` is passed to the broker by its name, see `ExchangeType`.
    *
    * An internal exchange can't be published to by clients. A `publish` to an internal exchange closes the channel with
-   * an `ACCESS_REFUSED` error (reply code 403).
+   * an `ACCESS_REFUSED` error (reply code 403). The `publish` call itself succeeds, and the next call on the channel
+   * fails with an `AlreadyClosedException`.
    *
    * {{{
    * import zio._
@@ -239,11 +242,14 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * Consumes messages from a queue as a stream of deliveries.
    *
    * The stream ends when the broker cancels the consumer, for example when the queue is deleted. It fails with a
-   * `ShutdownSignalException` when the connection closes. When the stream ends, the consumer is cancelled with
-   * `basicCancel`, and an error from that call is ignored.
+   * `ShutdownSignalException` when the channel or its connection closes, for example after a channel error from another
+   * call on the same `Channel`. When the stream ends, the consumer is cancelled with `basicCancel` on its
+   * `consumerTag`, and an error from that call is ignored. With an empty `consumerTag`, the consumer stays registered
+   * after the stream ends. `consume` holds the permit only while it registers and cancels the consumer, so other calls
+   * run while its stream is open.
    *
    * With `autoAck = false` (the default), each delivery must be acknowledged with `ack` or rejected with `nack`.
-   * Deliveries that are not acknowledged go back to the queue when the connection closes.
+   * Deliveries that are not acknowledged go back to the queue when the channel closes, not when the stream ends.
    *
    * {{{
    * import zio._
@@ -406,11 +412,12 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
    * @param routingKey
    *   Routing key of the message
    * @param mandatory
-   *   True to ask the broker to return a message that no queue receives. This channel registers no return listener, so
-   *   the call succeeds whether or not a queue receives the message
+   *   True to ask the broker to return a message that no queue receives. This `Channel` registers no return listener,
+   *   so a returned message is dropped. The call succeeds whether or not a queue receives the message
    * @param immediate
    *   Not supported by RabbitMQ: with `true`, the broker closes the connection with a `NOT_IMPLEMENTED` error (reply
-   *   code 540)
+   *   code 540). The `publish` call itself succeeds, and the next call on the channel fails with an
+   *   `AlreadyClosedException`
    * @param props
    *   Message properties, such as `MessageProperties.PERSISTENT_BASIC`, which asks the broker to persist the message
    */
@@ -462,7 +469,9 @@ class Channel private[amqp] (channel: RChannel, access: Semaphore) {
   }
 
   /**
-   * Purges the contents of the given queue.
+   * Removes the messages of a queue that are ready for delivery. Messages that were delivered and not yet acknowledged
+   * stay in the queue. If the queue doesn't exist, the broker closes the channel with a `NOT_FOUND` error (reply code
+   * 404).
    *
    * @param queue
    *   the name of the queue
@@ -489,8 +498,10 @@ object Amqp {
   /**
    * Creates a Connection
    *
-   * The connection is closed when the enclosing `Scope` ends. If the broker has already closed the connection, closing
-   * it fails with a defect (`AlreadyClosedException`) when the scope ends.
+   * The connection is closed when the enclosing `Scope` ends. If the broker has closed the connection and the client
+   * has not reopened it, closing it fails with a defect (`AlreadyClosedException`) when the scope ends. A
+   * `ConnectionFactory` reopens such a connection by default (automatic recovery, after 5 seconds), and the close then
+   * succeeds.
    *
    * @param factory
    *   Connection factory
@@ -528,16 +539,14 @@ object Amqp {
   }
 
   /**
-   * Creates a Connection with the settings of an `AMQPConfig`. The user and the password are written into the URI
-   * without percent-encoding. A `/` in the password makes this method throw a `java.lang.IllegalArgumentException` when
-   * it is called, not when the returned effect runs.
+   * Creates a Connection with the settings of an `AMQPConfig`, using `AMQPConfig.toUri` to build the URI.
    *
    * {{{
    * import com.rabbitmq.client.Connection
    * import zio._
    * import zio.amqp.model._
    *
-   * val config: AMQPConfig = AMQPConfig.default.copy(host = "rabbit.example.com", ssl = true)
+   * val config: AMQPConfig = AMQPConfig.default.copy(host = "rabbit.example.com", port = 5671, ssl = true)
    *
    * val connection: ZIO[Scope, Throwable, Connection] = Amqp.connect(config)
    * }}}
