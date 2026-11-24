@@ -39,7 +39,7 @@ object ExchangeType {
 
   /**
    * Routes a message to the queues whose binding pattern matches the routing key. In a pattern, `*` matches one word
-   * and `#` matches zero or more words. Its name is `topic`.
+   * and `#` matches zero or more words, where the words of a routing key are separated by dots. Its name is `topic`.
    */
   case object Topic extends ExchangeType {
     override val name: String = "topic"

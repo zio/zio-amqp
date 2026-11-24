@@ -33,7 +33,8 @@ package object model {
   type ExchangeName = ExchangeName.Type
 
   /**
-   * The routing key of a message. An exchange uses it to decide which queues receive the message.
+   * The routing key of a message, or the binding key of a queue binding. Direct and topic exchanges, and the default
+   * exchange, use it to decide which queues receive the message. Fanout and headers exchanges ignore it.
    */
   object RoutingKey extends Newtype[String]
 
@@ -43,7 +44,7 @@ package object model {
   type RoutingKey = RoutingKey.Type
 
   /**
-   * The name of a consumer. The broker uses it to identify the consumer, so the consumer can be cancelled.
+   * The tag that identifies a consumer on its channel. `Channel.consume` uses it to cancel the consumer.
    */
   object ConsumerTag extends Newtype[String]
 
@@ -55,8 +56,9 @@ package object model {
   // DeliveryTag is subtype of Long
   // because we need ordering
   /**
-   * The number that the broker gives a delivery on a channel. It is a `Subtype` of `Long`, so delivery tags can be
-   * compared, which `Channel.ackMany` and `Channel.nackMany` rely on.
+   * The number that the broker gives a delivery on a channel. It is a `Subtype` of `Long`, so a delivery tag can be
+   * used where a `Long` is expected. `Channel.ackMany` and `Channel.nackMany` use the ordering of `Long` to find the
+   * largest tag.
    */
   object DeliveryTag extends Subtype[Long]
 

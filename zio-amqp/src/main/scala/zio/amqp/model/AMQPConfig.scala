@@ -4,32 +4,37 @@ import zio.{ Duration, durationInt }
 import java.net.{ URI, URLEncoder }
 
 /**
- * Settings of a connection to a RabbitMQ broker. `toUri` turns them into the AMQP URI that `Amqp.connect` uses.
+ * Settings of a connection to a RabbitMQ broker. `toUri` turns them into the AMQP URI that `Amqp.connect(amqpConfig)`
+ * uses.
  *
  * {{{
  * val local: AMQPConfig = AMQPConfig.default
  *
  * val remote: AMQPConfig =
- *   AMQPConfig.default.copy(host = "rabbit.example.com", user = "orders", password = "secret", ssl = true)
+ *   AMQPConfig.default.copy(host = "rabbit.example.com", port = 5671, user = "orders", password = "secret", ssl = true)
  * }}}
  *
  * @param user
- *   User name. It is written into the URI without percent-encoding
+ *   User name, used as it is in the URI
  * @param password
- *   Password. It is written into the URI without percent-encoding
+ *   Password, used as it is in the URI
  * @param vhost
- *   Virtual host, such as `/`. It is percent-encoded by `encodedVhost`
+ *   Virtual host, such as `/`. It is encoded with `encodedVhost`. A space in it reaches the broker as `+`, because the
+ *   client does not decode `+` back to a space
  * @param heartbeatInterval
- *   Heartbeat interval, sent to the broker in whole seconds. A fraction of a second is dropped, so 500 ms becomes 0,
- *   which turns heartbeats off
+ *   Heartbeat interval, requested from the broker in whole seconds. A fraction of a second is dropped, so 500 ms
+ *   becomes 0. The client and the broker use the smaller of their two values, and when one of them is 0 they use the
+ *   other one
  * @param ssl
- *   True to connect with TLS. The URI scheme becomes `amqps`
+ *   True to connect with TLS. The URI scheme becomes `amqps`. The port is not changed, so set `port` to the broker's
+ *   TLS port, such as 5671
  * @param host
  *   Host name of the broker
  * @param port
- *   Port of the broker
+ *   Port of the broker. The type is `Short`, so a port above 32767 can't be given
  * @param connectionTimeout
- *   Connection timeout, sent to the broker in milliseconds. A sub-millisecond part is dropped
+ *   Timeout for opening the TCP connection, passed to the client in whole milliseconds. A sub-millisecond part is
+ *   dropped, so 1500 µs becomes 1 ms
  */
 case class AMQPConfig(
   user: String,
@@ -51,8 +56,7 @@ case class AMQPConfig(
    * The AMQP URI for these settings. The scheme is `amqps` when `ssl` is true, and `amqp` otherwise. The URI carries
    * the `heartbeat` parameter in whole seconds and the `connection_timeout` parameter in milliseconds.
    *
-   * Throws a `java.net.URISyntaxException` when the URI can't be built, for example when the password contains a space.
-   * The exception is thrown when the method is called.
+   * The URI is built when the method is called, and the user and password are placed in it as they are.
    */
   def toUri: AmqpUri =
     AmqpUri(
